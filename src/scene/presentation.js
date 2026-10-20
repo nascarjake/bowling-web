@@ -1,4 +1,4 @@
-import { districtForStage, routeTheme } from '../ui/routeArt.js?v=20261019e';
+import { districtForStage, routeTheme } from '../ui/routeArt.js?v=20261019f';
 
 // Presentation for a single, continuously widening lane. Dimensions are in world
 // units: boards, trim, and light fixtures retain their scale as the rack grows.

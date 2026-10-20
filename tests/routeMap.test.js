@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { routeNodePosition, stageConnections, districtForStage, routeTheme } from '../src/ui/routeArt.js';
+import { routeNodePosition, stageConnections, circuitWires, districtForStage, routeTheme } from '../src/ui/routeArt.js';
 import { ROUTE_TYPES, BOSS_VARIANTS } from '../src/content/routes.js';
 
 const rows = Array.from({ length: 12 }, (_, index) => {
@@ -34,6 +34,36 @@ test('portrait maps transpose the same route positions and bosses remain centere
         assert.deepEqual(portrait, { x: desktop.y, y: desktop.x });
         assert.ok(desktop.x >= 12 && desktop.x <= 86 && desktop.y >= 22 && desktop.y <= 78);
         if (node.frame % 4 === 0) assert.equal(desktop.y, 50);
+    }
+});
+
+test('wires reach every artwork port through shared junctions on rectangular maps', () => {
+    for (const [width, height, portrait] of [[1040, 420, false], [520, 170, false], [340, 380, true]]) {
+        const anchors = Object.fromEntries(rows.flat().map(node => {
+            const position = routeNodePosition(node, portrait);
+            return [node.id, { x: position.x * width / 100, y: position.y * height / 100, rx: 24, ry: 16 }];
+        }));
+        for (let stage = 1; stage <= 3; stage++) {
+            const wires = circuitWires(rows, stage, anchors, portrait);
+            assert.equal(wires.junctions.length, 3);
+            for (const wire of wires.paths) {
+                const anchor = anchors[wire.nodeId];
+                const port = wire.side === 'out' ? wire.start : wire.end;
+                const direction = wire.side === 'out' ? 1 : -1;
+                assert.deepEqual(port, {
+                    x: anchor.x + (portrait ? 0 : anchor.rx * direction),
+                    y: anchor.y + (portrait ? anchor.ry * direction : 0)
+                });
+                const hub = wire.side === 'out' ? wire.end : wire.start;
+                assert.ok(wires.junctions.some(point => point.x === hub.x && point.y === hub.y));
+            }
+            for (let column = (stage - 1) * 4; column < stage * 4; column++) {
+                for (const node of rows[column]) {
+                    const connected = wires.paths.filter(wire => wire.nodeId === node.id);
+                    assert.equal(connected.length, column % 4 === 0 || column % 4 === 3 ? 1 : 2);
+                }
+            }
+        }
     }
 });
 

@@ -10,11 +10,12 @@ import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from 
 import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js';
 import { initPhysics } from '../physics/rapierShim.js?v=20261019d';
 import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './laneLayout.js';
-import { createLanePresentation } from '../scene/presentation.js?v=20261019e';
-import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, stageConnections, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019e';
+import { createLanePresentation } from '../scene/presentation.js?v=20261019f';
+import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019f';
 
 let displayedRouteStage = 1;
 let routePreviewNodeId = '';
+let routeMapResizeObserver = null;
 
 const RUN_SAVE_KEY = 'pinfallRunSlotsV1';
 const PROFILE_KEY = 'pinfallProfileV1';
@@ -4545,6 +4546,12 @@ function updateGameplayHud() {
 }
 
 function bindInputs() {
+    if (window.ResizeObserver) {
+        routeMapResizeObserver = new ResizeObserver(() => {
+            if (GAME.state === 'ROUTE') drawRouteMapLines();
+        });
+        routeMapResizeObserver.observe(document.getElementById('route-map-stage'));
+    }
     document.getElementById('btn-practice-lane').addEventListener('click', () => startPractice());
     document.getElementById('practice-rack').addEventListener('change', event => startPractice(Number(event.target.value)));
     document.getElementById('practice-specials').addEventListener('change', () => startPractice(GAME.frame));
@@ -7722,6 +7729,7 @@ function renderRouteDistrict() {
             container.querySelectorAll('button').forEach(other => other.setAttribute('aria-pressed', String(other === card)));
             sfx.playTick();
             renderRoutePreview();
+            drawRouteMapLines();
         });
         container.appendChild(card);
     });
@@ -7749,25 +7757,45 @@ function renderRoutePreview() {
 
 function drawRouteMapLines() {
     const svg = document.getElementById('route-map-lines');
-    if (!svg || !GAME.routeMap.length) return;
+    const stage = document.getElementById('route-map-stage');
+    if (!svg || !stage || GAME.state !== 'ROUTE' || !GAME.routeMap.length) return;
     const portrait = isPortraitMobileLayout();
     const nextFrame = GAME.frame + 1;
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'none');
-    document.querySelectorAll('.circuit-stop').forEach(card => {
-        const node = GAME.routeMap.flat().find(item => item.id === card.dataset.nodeId);
+    const nodes = new Map(GAME.routeMap.flat().map(node => [node.id, node]));
+    const cards = [...document.querySelectorAll('.circuit-stop')];
+    cards.forEach(card => {
+        const node = nodes.get(card.dataset.nodeId);
         if (!node) return;
         const pos = circuitNodePosition(node, portrait);
         card.style.left = `${pos.x}%`;
         card.style.top = `${pos.y}%`;
     });
-    svg.innerHTML = stageConnections(GAME.routeMap, displayedRouteStage).map(({ from, to }) => {
-        const a = circuitNodePosition(from, portrait), b = circuitNodePosition(to, portrait);
-        const cleared = GAME.completedNodes.includes(from.id) && GAME.completedNodes.includes(to.id);
-        const active = GAME.completedNodes.includes(from.id) && to.frame === nextFrame;
-        const path = portrait ? `M${a.x} ${a.y} C${a.x} ${(a.y+b.y)/2},${b.x} ${(a.y+b.y)/2},${b.x} ${b.y}` : `M${a.x} ${a.y} C${(a.x+b.x)/2} ${a.y},${(a.x+b.x)/2} ${b.y},${b.x} ${b.y}`;
-        return `<path d="${path}" class="circuit-link ${cleared ? 'is-cleared' : active ? 'is-active' : ''}" vector-effect="non-scaling-stroke"/>`;
-    }).join('');
+    const bounds = stage.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    // Explicit dimensions prevent SVG's intrinsic square from stretching paths
+    // below the stops on wide maps. Anchors include viewBox letterboxing.
+    svg.setAttribute('width', bounds.width);
+    svg.setAttribute('height', bounds.height);
+    svg.setAttribute('viewBox', `0 0 ${bounds.width} ${bounds.height}`);
+    const anchors = {};
+    cards.forEach(card => {
+        const art = card.querySelector('.stop-platform > svg');
+        const matrix = art?.getScreenCTM();
+        if (!matrix) return;
+        const boss = nodes.get(card.dataset.nodeId)?.route.boss;
+        const point = new DOMPoint(boss ? 150 : 180, boss ? 130 : 128).matrixTransform(matrix);
+        anchors[card.dataset.nodeId] = {
+            x: point.x - bounds.left, y: point.y - bounds.top,
+            rx: (boss ? 122 : 151) * Math.hypot(matrix.a, matrix.b),
+            ry: (boss ? 105 : 88) * Math.hypot(matrix.c, matrix.d)
+        };
+    });
+    const wires = circuitWires(GAME.routeMap, displayedRouteStage, anchors, portrait);
+    const state = id => GAME.completedNodes.includes(id) ? 'is-cleared' : nodes.get(id).frame === nextFrame ? 'is-active' : nodes.get(id).frame < nextFrame ? 'is-bypassed' : '';
+    const focused = id => id === routePreviewNodeId ? 'is-focused' : '';
+    svg.innerHTML = wires.paths.map(wire => `<path d="${wire.d}" data-node-id="${wire.nodeId}" data-side="${wire.side}" class="circuit-link ${state(wire.nodeId)} ${focused(wire.nodeId)}" style="--wire-color:${routeTheme(nodes.get(wire.nodeId).route).color}"/>`).join('')
+        + wires.junctions.map(point => `<path class="circuit-junction" d="M${point.x} ${point.y-3}l3 3-3 3-3-3Z"/>`).join('')
+        + wires.ports.map(point => `<circle data-port-node="${point.nodeId}" class="circuit-port ${state(point.nodeId)} ${focused(point.nodeId)}" cx="${point.x}" cy="${point.y}" r="2.5" style="--wire-color:${routeTheme(nodes.get(point.nodeId).route).color}"/>`).join('');
 }
 
 function chooseRouteByNode(nodeId) {

@@ -40,6 +40,42 @@ export function stageConnections(rows, stage) {
     return links;
 }
 
+// Geometry uses measured artwork anchors in the same pixel space as the SVG.
+// Shared junctions express every legal choice without nine crossing curves.
+export function circuitWires(rows, stage, anchors, portrait = false) {
+    const paths = [], junctions = [], ports = new Map();
+    const start = (stage - 1) * 4;
+    const curve = (a, b) => portrait
+        ? `M${a.x} ${a.y} C${a.x} ${(a.y+b.y)/2} ${b.x} ${(a.y+b.y)/2} ${b.x} ${b.y}`
+        : `M${a.x} ${a.y} C${(a.x+b.x)/2} ${a.y} ${(a.x+b.x)/2} ${b.y} ${b.x} ${b.y}`;
+    for (let column = start; column < Math.min(start + 3, rows.length - 1); column++) {
+        const sources = rows[column].filter(node => anchors[node.id]);
+        const targets = rows[column + 1].filter(node => anchors[node.id]);
+        if (!sources.length || !targets.length) continue;
+        const endpoint = (node, direction) => {
+            const anchor = anchors[node.id];
+            return { x: anchor.x + (portrait ? 0 : anchor.rx * direction), y: anchor.y + (portrait ? anchor.ry * direction : 0) };
+        };
+        const sourcePorts = sources.map(node => endpoint(node, 1));
+        const targetPorts = targets.map(node => endpoint(node, -1));
+        const average = points => ({ x: points.reduce((sum, p) => sum + p.x, 0) / points.length, y: points.reduce((sum, p) => sum + p.y, 0) / points.length });
+        const a = average(sourcePorts), b = average(targetPorts);
+        const hub = { x: (a.x+b.x)/2, y: (a.y+b.y)/2 };
+        junctions.push(hub);
+        sources.forEach((node, index) => {
+            const point = sourcePorts[index];
+            ports.set(`${node.id}:out`, { ...point, nodeId: node.id });
+            paths.push({ nodeId: node.id, side: 'out', start: point, end: hub, d: curve(point, hub) });
+        });
+        targets.forEach((node, index) => {
+            const point = targetPorts[index];
+            ports.set(`${node.id}:in`, { ...point, nodeId: node.id });
+            paths.push({ nodeId: node.id, side: 'in', start: hub, end: point, d: curve(hub, point) });
+        });
+    }
+    return { paths, junctions, ports: [...ports.values()] };
+}
+
 function pin(x, y, size = 1, color = '#fff4d7') {
     return `<g transform="translate(${x} ${y}) scale(${size})"><path d="M0-19C-5-19-6-14-4-9L-3-5C-3-1-9 5-8 11Q-7 17 0 17T8 11C9 5 3-1 3-5L4-9C6-14 5-19 0-19Z" fill="${color}" stroke="#111b2b" stroke-width="2"/><path d="M-4-7H4M-4-3H4" stroke="#f2757a" stroke-width="2.4"/></g>`;
 }

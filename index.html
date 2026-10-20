@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./styles/ui.css">
     <link rel="stylesheet" href="./styles/debug.css">
     <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
-    <link rel="stylesheet" href="./styles/arcade.css?v=20261019e">
+    <link rel="stylesheet" href="./styles/arcade.css?v=20261019f">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -478,9 +478,11 @@
                 <div id="route-map-container" class="route-map-board">
                     <div id="route-district-art" class="district-scenery"></div>
                     <div class="district-caption"><span id="route-district-tag"></span><b id="route-district-name"></b></div>
-                    <div id="route-frame-markers" aria-hidden="true"></div>
-                    <svg id="route-map-lines" aria-hidden="true"></svg>
-                    <div id="route-options-container" aria-label="Lane routes"></div>
+                    <div id="route-map-stage">
+                        <div id="route-frame-markers" aria-hidden="true"></div>
+                        <svg id="route-map-lines" aria-hidden="true"></svg>
+                        <div id="route-options-container" aria-label="Lane routes"></div>
+                    </div>
                     <div class="circuit-map-key"><span><i></i> YOUR NEXT LANE</span><span>◆ HOUSE BOSS</span></div>
                 </div>
                 <aside id="route-choice-panel" aria-label="Lane preview" aria-live="polite"></aside>
@@ -629,6 +631,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019e"></script>
+    <script type="module" src="./src/main.js?v=20261019f"></script>
 </body>
 </html>
