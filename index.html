@@ -179,7 +179,10 @@
 
             <!-- Steer Indicator / Mobile controls (Right) -->
             <div class="hud-panel border-4 border-gray-700 p-3 rounded-lg flex flex-col items-center justify-center gap-2 w-full md:w-64">
-                <span id="mobile-steer-label" class="text-[8px] text-yellow-400 font-bold">MOVE / STEER</span>
+                <div class="control-topline">
+                    <span id="mobile-steer-label" class="text-[8px] text-yellow-400 font-bold">MOVE / STEER</span>
+                    <button id="btn-camera-view" type="button" aria-label="Raise camera to view the lane" aria-pressed="false">RAISE VIEW</button>
+                </div>
                 <div class="flex gap-2 w-full">
                     <button id="btn-steer-left" class="control-key flex-1 py-2 bg-gray-800 border-2 border-gray-600 rounded active:bg-violet-700 text-xs text-white"><span class="control-arrow">&larr;</span><span class="control-key-label">A</span></button>
                     <button id="btn-roll-action" class="control-key flex-1 py-2 bg-red-800 border-2 border-red-600 rounded text-[8px] text-white">TAP METER</button>

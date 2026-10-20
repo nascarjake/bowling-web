@@ -27,6 +27,10 @@
 #mobile-steer-label { color: #b7a88d; font-size: 7px; letter-spacing: .12em; }
 #game-hud #control-hud-row .control-key { height: 46px; border-radius: 50%; background: radial-gradient(circle at 45% 20%, #363440, #10131d 75%) !important; border: 2px solid #8d7859 !important; box-shadow: 0 3px 0 #07080c, inset 0 0 0 2px #14151e; pointer-events: auto; }
 #control-hud-row #btn-roll-action { border-radius: 24px; flex: 2; color: #f1c778; font-size: 7px; }
+.control-topline { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
+#control-hud-row #btn-camera-view { min-height: 27px; padding: 3px 9px; border: 1px solid #9a7954; border-radius: 16px; background: #161923ee; color: #efd29a; font-family: 'VT323', monospace; font-size: 12px; line-height: 1; white-space: nowrap; pointer-events: auto; cursor: pointer; }
+#control-hud-row #btn-camera-view[aria-pressed="true"] { background: #65472d; border-color: #f0c67d; color: #fff1c8; }
+#control-hud-row #btn-camera-view:disabled { opacity: .4; cursor: default; }
 .aim-controls { display: flex; align-items: center; justify-content: center; gap: 12px; color: #8c969f; font-size: 7px; }
 .aim-controls button { width: 52px; height: 32px; border: 1px solid #5c777e; border-radius: 18px; background: #111923e8; color: #8fddda; pointer-events: auto; }
 .aim-controls button:disabled { opacity: .3; }
@@ -77,6 +81,7 @@ body[data-practice="true"] #game-hud > div:first-child > .hud-panel:last-child, 
     #game-hud #control-hud-row > .meter-shell { width: 164px !important; height: 164px !important; }
     #gauge-canvas { width: 150px !important; height: 150px !important; }
     #meter-caption { bottom: 183px; font-size: 7px; }
+    #control-hud-row #btn-camera-view { padding-inline: 6px; font-size: 10px; }
     .meter-key-hint { font-size: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {

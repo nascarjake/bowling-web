@@ -175,6 +175,8 @@ const ballVisualForwardAxis = new THREE.Vector3(0, 0, 1);
 let MATERIALS = {};
 let cameraShake = 0;
 let cameraLookTarget = new THREE.Vector3();
+let preRollViewRaised = false;
+let preRollViewBlend = 0;
 const impactCamera = {
     active: false,
     elapsed: 0,
@@ -3932,9 +3934,34 @@ function setPreRollCamera() {
     }
     const origin = laneOrigin();
     const back = THREE.MathUtils.clamp(laneCameraDistance(LANE.currentWidth, camera.aspect, camera.fov) * 0.48, 7.8, 10);
-    camera.position.set(origin.x + launchX * 0.42, origin.y + 2.8 + back * 0.04, ballStartZ() + back);
-    cameraLookTarget.set(origin.x + launchX * 0.25, origin.y + 0.7, laneStartZ() - 7);
+    const overviewBack = back + THREE.MathUtils.clamp(LANE.currentWidth * 0.07, 2.5, 4.5);
+    camera.position.set(
+        origin.x + launchX * THREE.MathUtils.lerp(0.42, 0.25, preRollViewBlend),
+        THREE.MathUtils.lerp(origin.y + 2.8 + back * 0.04, origin.y + 7.8 + Math.min(2, LANE.currentWidth * 0.08), preRollViewBlend),
+        ballStartZ() + THREE.MathUtils.lerp(back, overviewBack, preRollViewBlend)
+    );
+    cameraLookTarget.set(
+        origin.x + launchX * (1 - preRollViewBlend) * 0.25,
+        THREE.MathUtils.lerp(origin.y + 0.7, origin.y + 0.55, preRollViewBlend),
+        laneStartZ() - THREE.MathUtils.lerp(7, 9, preRollViewBlend)
+    );
     camera.lookAt(cameraLookTarget);
+}
+
+function updateCameraViewButton() {
+    const button = document.getElementById('btn-camera-view');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(preRollViewRaised));
+    button.setAttribute('aria-label', preRollViewRaised ? 'Lower camera behind the ball' : 'Raise camera to view the lane');
+    button.title = preRollViewRaised ? 'Lower to ball view (V)' : 'Raise to lane overview (V)';
+    button.textContent = preRollViewRaised ? 'LOWER VIEW' : 'RAISE VIEW';
+}
+
+function togglePreRollView() {
+    if (GAME.state !== 'MAIN_METER' || GAME.paused || debugState.active) return;
+    preRollViewRaised = !preRollViewRaised;
+    updateCameraViewButton();
+    sfx.playTick();
 }
 
 let particles = [];
@@ -4116,6 +4143,9 @@ class RetroGauge {
 
     start() {
         this.stage = 'AIM';
+        preRollViewRaised = false;
+        preRollViewBlend = 0;
+        updateCameraViewButton();
         setMobileControlRailHidden(false);
         this.aimAngle = 0;
         this.power = 0;
@@ -4505,6 +4535,7 @@ function updateGameplayHud() {
         lastShotLabel = label;
     }
     for (const id of ['btn-aim-left', 'btn-aim-right']) document.getElementById(id).disabled = !aiming;
+    document.getElementById('btn-camera-view').disabled = GAME.state !== 'MAIN_METER' || GAME.paused || debugState.active;
 }
 
 function bindInputs() {
@@ -4519,7 +4550,11 @@ function bindInputs() {
     document.getElementById('btn-aim-left').addEventListener('click', () => gauge.nudgeAim(-1));
     document.getElementById('btn-aim-right').addEventListener('click', () => gauge.nudgeAim(1));
     document.getElementById('gauge-canvas').addEventListener('keydown', event => {
-        if (event.code === 'Enter' && !event.repeat) triggerLaunchClick();
+        if (event.code === 'Enter' && !event.repeat) {
+            event.preventDefault();
+            event.stopPropagation();
+            triggerLaunchClick();
+        }
     });
     window.addEventListener('keydown', (e) => {
         if (e.code === 'F1' || e.code === 'Backquote') {
@@ -4557,9 +4592,16 @@ function bindInputs() {
         }
         if (GAME.paused) return;
         if (e.code === 'Space') {
-            if (e.repeat) return;
+            if (e.target.closest?.('input, select, textarea, [contenteditable="true"]')) return;
             e.preventDefault();
+            if (e.repeat) return;
             triggerLaunchClick();
+            return;
+        }
+        if (e.code === 'KeyV' && !e.repeat && GAME.state === 'MAIN_METER') {
+            e.preventDefault();
+            togglePreRollView();
+            return;
         }
         if (GAME.state === 'MAIN_METER' && gauge.stage === 'AIM') {
             if (e.code === 'KeyQ') { e.preventDefault(); gauge.nudgeAim(-1); }
@@ -4658,12 +4700,17 @@ function bindInputs() {
         triggerLaunchClick();
     });
     mobileGaugeControl?.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' || e.code === 'Enter') {
+        if (e.code === 'Enter') {
             e.preventDefault();
+            e.stopPropagation();
             triggerLaunchClick();
         }
     });
 
+    document.getElementById('btn-camera-view').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePreRollView();
+    });
     document.getElementById('btn-roll-action').addEventListener('click', (e) => {
         e.stopPropagation();
         triggerLaunchClick();
@@ -6208,6 +6255,9 @@ function applyPocketCarryAssist(headPin, entry) {
 }
 
 function executeRoll(aim, power, spin) {
+    preRollViewRaised = false;
+    preRollViewBlend = 0;
+    updateCameraViewButton();
     GAME.state = 'BALL_ROLLING';
     impactCamera.active = false;
     impactCamera.elapsed = 0;
@@ -8499,6 +8549,12 @@ function animate() {
 
     if (!GAME.paused && GAME.state === 'MAIN_METER') {
         gauge.update(dt);
+        if (GAME.state === 'MAIN_METER' && !debugState.active && !debugState.config.useDebugCamera) {
+            const blend = 1 - Math.exp(-5 * dt);
+            preRollViewBlend = THREE.MathUtils.lerp(preRollViewBlend, preRollViewRaised ? 1 : 0, blend);
+            if (Math.abs(preRollViewBlend - Number(preRollViewRaised)) < 0.001) preRollViewBlend = Number(preRollViewRaised);
+            setPreRollCamera();
+        }
     }
     gauge.draw();
 
