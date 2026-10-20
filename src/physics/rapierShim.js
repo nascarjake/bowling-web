@@ -1,6 +1,5 @@
-import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
-
-function createRapierCannonShim(RAPIER) {
+export function createRapierCannonShim(RAPIER) {
+    let nextBodyId = 1;
     class Vec3 {
         constructor(x = 0, y = 0, z = 0, owner = null, kind = 'position') {
             this._x = x;
@@ -87,17 +86,23 @@ function createRapierCannonShim(RAPIER) {
     class Cylinder {
         constructor(radiusTop, radiusBottom, height) {
             this.type = 'cylinder';
-            this.radius = Math.max(radiusTop, radiusBottom);
+            // Rapier's cylinder has one radius; the mean follows a tapered pin
+            // more closely than the widest end of every overlapping segment.
+            this.radius = (radiusTop + radiusBottom) / 2;
             this.height = height;
         }
     }
 
     class Body {
         constructor(options = {}) {
+            this.id = nextBodyId++;
             this.mass = options.mass || 0;
             this.material = options.material || null;
             this.shapes = [];
             this.shapeOffsets = [];
+            this.shapeMassWeights = options.shapeMassWeights || null;
+            this.ccdEnabled = options.ccdEnabled ?? (options.material?.name === 'ball');
+            this.sleepRequested = false;
             this.listeners = {};
             this.raw = null;
             this.world = null;
@@ -120,9 +125,16 @@ function createRapierCannonShim(RAPIER) {
         _emit(type, event) {
             (this.listeners[type] || []).forEach(handler => handler(event));
         }
-        wakeUp() { this.raw?.wakeUp(); }
-        sleep() { this.raw?.sleep(); }
+        wakeUp() { this.sleepRequested = false; this.raw?.wakeUp(); }
+        sleep() { this.sleepRequested = true; this.raw?.sleep(); }
         applyImpulse(impulse) { this.raw?.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z }, true); }
+        applyImpulseAtPoint(impulse, point) {
+            this.raw?.applyImpulseAtPoint(
+                { x: impulse.x, y: impulse.y, z: impulse.z },
+                { x: point.x, y: point.y, z: point.z },
+                true
+            );
+        }
         applyForce(force) { this.raw?.addForce({ x: force.x, y: force.y, z: force.z }, true); }
     }
 
@@ -149,7 +161,7 @@ function createRapierCannonShim(RAPIER) {
 
     class World {
         constructor(gravity = { x: 0, y: -9.81, z: 0 }) {
-    this.raw = new RAPIER.World(gravity);
+            this.raw = new RAPIER.World(gravity);
             this.eventQueue = new RAPIER.EventQueue(true);
             this.bodiesByCollider = new Map();
             this.gravity = new Vec3(gravity.x, gravity.y, gravity.z);
@@ -158,7 +170,13 @@ function createRapierCannonShim(RAPIER) {
                 originalSet(x, y, z);
                 this.raw.gravity = { x, y, z };
             };
-            this.solver = { iterations: 8, tolerance: 0.001 };
+            this.solver = { tolerance: 0.001 };
+            Object.defineProperty(this.solver, 'iterations', {
+                get: () => this.raw.numSolverIterations,
+                set: (value) => { this.raw.numSolverIterations = Math.max(1, Math.floor(value)); }
+            });
+            this.raw.numInternalPgsIterations = 2;
+            this.raw.maxCcdSubsteps = 2;
         }
         addBody(body) {
             const pos = body.position._read();
@@ -168,19 +186,24 @@ function createRapierCannonShim(RAPIER) {
             if (body.mass > 0) {
                 desc.setLinearDamping(body.linearDamping || 0);
                 desc.setAngularDamping(body.angularDamping || 0);
-                if (desc.setAdditionalMass) desc.setAdditionalMass(body.mass);
-                if (body.shapes.some(shape => shape.type === 'sphere')) desc.setCcdEnabled(true);
+                if (body.ccdEnabled) desc.setCcdEnabled(true);
             }
             body.raw = this.raw.createRigidBody(desc);
             body.world = this;
+            const weights = body.shapeMassWeights?.length === body.shapes.length
+                ? body.shapeMassWeights
+                : body.shapes.map(() => 1);
+            const totalWeight = weights.reduce((sum, weight) => sum + Math.max(0, weight), 0) || 1;
             body.shapes.forEach((shape, index) => {
                 let colliderDesc = applyMaterial(colliderDescForShape(shape), body.material);
+                if (body.mass > 0) colliderDesc = colliderDesc.setMass(body.mass * Math.max(0, weights[index]) / totalWeight);
                 const offset = body.shapeOffsets[index];
                 if (offset) colliderDesc = colliderDesc.setTranslation(offset.x, offset.y, offset.z);
                 colliderDesc = colliderDesc.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
                 const collider = this.raw.createCollider(colliderDesc, body.raw);
                 this.bodiesByCollider.set(collider.handle, body);
             });
+            if (body.sleepRequested) body.raw.sleep();
         }
         remove(body) {
             if (!body?.raw) return;
@@ -199,11 +222,15 @@ function createRapierCannonShim(RAPIER) {
             this.raw.forEachRigidBody(body => {
                 if (body.isDynamic()) body.resetForces(false);
             });
+            const reportedPairs = new Set();
             this.eventQueue.drainCollisionEvents((h1, h2, started) => {
                 if (!started) return;
                 const bodyA = this.bodiesByCollider.get(h1);
                 const bodyB = this.bodiesByCollider.get(h2);
                 if (!bodyA || !bodyB || bodyA === bodyB) return;
+                const pair = bodyA.id < bodyB.id ? `${bodyA.id}:${bodyB.id}` : `${bodyB.id}:${bodyA.id}`;
+                if (reportedPairs.has(pair)) return;
+                reportedPairs.add(pair);
                 bodyA._emit('collide', { body: bodyB });
                 bodyB._emit('collide', { body: bodyA });
             });
@@ -217,10 +244,10 @@ let physicsReady = null;
 
 export async function initPhysics() {
     if (!physicsReady) {
-        physicsReady = RAPIER.init().then(() => ({
-            RAPIER,
-            CANNON: createRapierCannonShim(RAPIER)
-        }));
+        physicsReady = import('https://cdn.skypack.dev/@dimforge/rapier3d-compat').then(async ({ default: RAPIER }) => {
+            await RAPIER.init();
+            return { RAPIER, CANNON: createRapierCannonShim(RAPIER) };
+        });
     }
     return physicsReady;
 }

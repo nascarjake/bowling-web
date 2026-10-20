@@ -8,7 +8,7 @@ import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js';
 import { PIN_TYPES } from '../content/pinTypes.js';
 import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js';
 import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js';
-import { initPhysics } from '../physics/rapierShim.js';
+import { initPhysics } from '../physics/rapierShim.js?v=20261019d';
 import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './laneLayout.js';
 import { createLanePresentation } from '../scene/presentation.js';
 
@@ -357,8 +357,7 @@ const BOWLING_PHYSICS = {
     pocketCarryMinSpeed: 9.8,
     pocketCarryMinOffset: 0.14,
     pocketCarryMaxOffset: 0.62,
-    pocketCarryImpulse: 0.17,
-    pocketCarryScatter: 0.08
+    pocketCarryImpulse: 0.1
 };
 
 // Pin types registry
@@ -400,7 +399,7 @@ function initEngine() {
     world = new CANNON.World();
     world.gravity.set(0, -12, 0); // brisk, but stable enough for tall pins
     world.broadphase = new CANNON.NaiveBroadphase();
-    world.solver.iterations = 20;
+    world.solver.iterations = 8;
     world.solver.tolerance = 0.001;
     setupPhysicsMaterials();
 
@@ -3540,9 +3539,7 @@ function spawnPin(x, z, type) {
     const route = GAME.currentRoute || ROUTE_TYPES.STANDARD;
     const pinMass = (BOWLING_PHYSICS.pinMass + (route.heavyPins ? BOWLING_PHYSICS.heavyPinMassBonus : 0)) * Math.max(0.9, Math.pow(scale, 1.2));
 
-    // Compound silhouette: broad base, fat belly, narrow neck, round head.
-    const uprightQuat = new CANNON.Quaternion();
-    uprightQuat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+    // Compound silhouette: Rapier's cylinders are already upright on Y.
     const baseShape = new CANNON.Cylinder(pinRadius * 0.45, pinRadius * 0.6, 0.24 * scale, 10);
     const lowerShape = new CANNON.Cylinder(pinRadius * 0.78, pinRadius * 0.58, 0.38 * scale, 10);
     const bellyShape = new CANNON.Sphere(pinRadius);
@@ -3554,14 +3551,16 @@ function spawnPin(x, z, type) {
     const body = new CANNON.Body({
         mass: pinMass,
         material: material,
+        shapeMassWeights: [0.12, 0.25, 0.38, 0.16, 0.06, 0.03],
+        ccdEnabled: isTenPinMode() || GAME.frame <= 3,
         sleepTimeLimit: 0.32,
         sleepSpeedLimit: 0.045
     });
-    body.addShape(baseShape, new CANNON.Vec3(0, -0.76 * scale, 0), uprightQuat);
-    body.addShape(lowerShape, new CANNON.Vec3(0, -0.52 * scale, 0), uprightQuat);
+    body.addShape(baseShape, new CANNON.Vec3(0, -0.76 * scale, 0));
+    body.addShape(lowerShape, new CANNON.Vec3(0, -0.52 * scale, 0));
     body.addShape(bellyShape, new CANNON.Vec3(0, -0.22 * scale, 0));
-    body.addShape(shoulderShape, new CANNON.Vec3(0, 0.12 * scale, 0), uprightQuat);
-    body.addShape(neckShape, new CANNON.Vec3(0, 0.46 * scale, 0), uprightQuat);
+    body.addShape(shoulderShape, new CANNON.Vec3(0, 0.12 * scale, 0));
+    body.addShape(neckShape, new CANNON.Vec3(0, 0.46 * scale, 0));
     body.addShape(headShape, new CANNON.Vec3(0, 0.72 * scale, 0));
     body.position.set(x, laneOrigin().y + pinRackOffset().y + pinHeight / 2 + 0.02, z);
 
@@ -3570,7 +3569,7 @@ function spawnPin(x, z, type) {
     body.position.x += (Math.random() - 0.5) * microJitter;
     body.position.z += (Math.random() - 0.5) * microJitter;
 
-    body.angularDamping = 0.085;
+    body.angularDamping = 0.2;
     body.linearDamping = 0.032;
     body.sleep();
 
@@ -3629,6 +3628,7 @@ function generatePinGrid(frameNumber) {
         pin.rackIndex = index;
     });
     GAME.stats.pinsSpawned = physicalPins.length;
+    world.solver.iterations = physicalPins.length <= 36 ? 8 : 5;
 }
 
 // Pin/ball textures belong to the presentation and are shared across racks.
@@ -5016,6 +5016,10 @@ function runDebugAction(action) {
         }
         return;
     }
+    if (action === 'stressRack') {
+        startPractice(12);
+        return;
+    }
     if (action === 'gutter') {
         debugGutterThrow();
     }
@@ -6245,29 +6249,13 @@ function applyPocketCarryAssist(headPin, entry) {
     const heavyPinDampen = route.heavyPins ? 0.7 : 1;
     const side = Math.sign(entry.offsetX || ballBody?.velocity?.x || (Math.random() - 0.5)) || 1;
     const assist = entry.speed * BOWLING_PHYSICS.pocketCarryImpulse * quality * heavyPinDampen;
-    const scatter = BOWLING_PHYSICS.pocketCarryScatter * quality * heavyPinDampen;
-
-    headPin.body.wakeUp();
-    headPin.body.velocity.x -= side * assist * 0.22;
-    headPin.body.velocity.z -= assist * 0.42;
-    headPin.body.angularVelocity.x += assist * 0.18;
-    headPin.body.angularVelocity.z += side * assist * 0.14;
-
-    physicalPins.forEach((pin) => {
-        if (!pin.body || pin === headPin || pin.cleanupStarted) return;
-        const dz = pin.body.position.z - headPin.body.position.z;
-        if (dz > 0.75 || dz < -3.4) return;
-        const dx = pin.body.position.x - headPin.body.position.x;
-        const dist = Math.max(0.5, Math.hypot(dx, dz));
-        if (dist > 2.25) return;
-        const falloff = 1 - dist / 2.25;
-        const nudge = assist * scatter * falloff;
-        pin.body.wakeUp();
-        pin.body.velocity.x += (dx / dist) * nudge + side * nudge * 0.35;
-        pin.body.velocity.z += (dz / dist) * nudge - nudge * 0.25;
-        pin.body.angularVelocity.x += nudge * 0.26;
-        pin.body.angularVelocity.z -= side * nudge * 0.18;
-    });
+    // Boost only the pin actually struck. An off-center impulse produces the
+    // tumble; the rest of the rack moves through pin-to-pin contact.
+    const center = headPin.body.position;
+    headPin.body.applyImpulseAtPoint(
+        new CANNON.Vec3(-side * assist * 0.2, 0, -assist),
+        new CANNON.Vec3(center.x + side * 0.1, center.y + 0.12, center.z + 0.06)
+    );
 }
 
 function executeRoll(aim, power, spin) {
