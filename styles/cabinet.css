@@ -63,18 +63,16 @@
 #boss-battle-hud { background:linear-gradient(90deg,#1c1028ea,#38233bf5,#1c1028ea); border:2px solid var(--boss-color); box-shadow:3px 3px #10071e; }
 
 /* The marquee keeps the original logo and bowling illustration. */
-#main-menu .arcade-menu-shell { position:relative; width:min(1480px,calc(100vw - 36px)) !important; height:calc(100dvh - 32px); min-height:0 !important; max-height:960px; padding:28px 28px 18px !important; gap:15px !important; border:4px solid #9160d1; box-shadow:inset 0 0 0 3px #190b2a,0 0 0 1px #c7965e,0 0 55px #7339a02e,0 24px 90px #000a; background:radial-gradient(ellipse at 50% 30%,#69357b30,transparent 52%),#160d25; }
-#main-menu .arcade-menu-shell::before { border-color:#8153a544; background:repeating-linear-gradient(0deg,#fff2e802 0 1px,transparent 1px 5px) !important; box-shadow:inset 0 0 65px #0003; }
+#main-menu .arcade-menu-shell { position:relative; width:min(1480px,calc(100vw - 36px)) !important; height:calc(100dvh - 32px); min-height:0 !important; max-height:960px; padding:28px 28px 18px !important; gap:15px !important; border:3px solid #8b3df2; box-shadow:inset 0 0 0 3px #190b2a,0 0 0 1px #c7965e,0 0 45px #7c3aed40,0 24px 90px #000a; background:radial-gradient(ellipse at 50% 30%,#ef863829,transparent 52%),radial-gradient(ellipse at 24% 65%,#7732d530,transparent 55%),#160c26; }
+#main-menu .arcade-menu-shell::before { border-color:#a855f744; background:repeating-linear-gradient(90deg,#fff2e805 0 1px,transparent 1px 54px),repeating-linear-gradient(0deg,#fff2e804 0 1px,transparent 1px 44px) !important; box-shadow:inset 0 0 65px #0003; }
 .cabinet-marquee-meta { position:absolute; top:17px; left:78px; right:78px; display:flex; justify-content:space-between; color:#a886b9; font:10px/1 'VT323',monospace; letter-spacing:.18em; pointer-events:none; }
 #main-menu .arcade-logo-row { padding:8px 50px 10px; gap:30px; min-height:0; }
 #main-menu .pinfall-title-lockup { width:auto; }
-#main-menu .pinfall-logo { font-size:clamp(38px,5.5vw,76px); line-height:1.1; letter-spacing:-.04em; color:#ffde86; text-shadow:0 2px #ffe8a8,0 5px #aa5573,0 8px #4a224b,3px 9px #0d0618,0 0 22px #ffce6d25; }
-#main-menu .pinfall-subtitle { color:#d9b9f0; font:20px/1.2 'VT323',monospace; letter-spacing:.13em; margin-top:9px; }
-#main-menu .arcade-corner { width:36px; height:36px; border:2px solid #b68ad6; box-shadow:2px 2px #d3a66755; background:#251237; }
-#main-menu .arcade-corner svg { width:26px; height:26px; stroke:#dfbcf4; }
-#main-menu .arcade-rail { background:#7648aa; box-shadow:0 0 0 2px #190d2a,0 0 9px #c390f733; }
-#main-menu .rail-left,#main-menu .rail-right { top:48px; bottom:48px; width:3px; }
-#main-menu .rail-top,#main-menu .rail-bottom { left:48px; right:48px; height:3px; }
+#main-menu .pinfall-logo { font-size:clamp(38px,5.5vw,76px); line-height:1.1; letter-spacing:-.04em; color:#ffde86; text-shadow:0 2px #ffe8a8,0 5px #aa5573,0 8px #4a224b,3px 9px #0d0618,0 0 18px #ffbe5f65,0 0 35px #b554dc25; }
+#main-menu .pinfall-subtitle { color:#ffdc89; font:20px/1.2 'VT323',monospace; letter-spacing:.13em; margin-top:9px; }
+#main-menu .arcade-rail { background:#8037ea; box-shadow:0 0 0 2px #190d2a,0 0 10px #ae62f750; }
+#main-menu .rail-left,#main-menu .rail-right { top:24px; bottom:24px; width:3px; }
+#main-menu .rail-top,#main-menu .rail-bottom { left:24px; right:24px; height:3px; }
 #main-menu .arcade-main-grid { display:grid; grid-template-columns:minmax(260px,1.02fr) minmax(300px,1.5fr) minmax(240px,.95fr); min-height:0; padding:0; gap:16px; overflow:hidden; }
 #main-menu .arcade-left-stack { display:flex; flex-direction:column; justify-content:center; gap:14px; min-height:0; overflow:auto; padding:2px 4px 4px 0; }
 #main-menu .menu-mode-card { padding:15px !important; border:2px solid #8858b8; background:radial-gradient(ellipse at 0 0,#70429940,transparent 80%),#27173a; box-shadow:inset 0 0 0 3px #180b2b,3px 3px #080412; flex-shrink:0; }
@@ -84,34 +82,33 @@
 #main-menu .mode-card-topline b { font-weight:normal; color:#8e719f; }
 #main-menu .mode-card-main { display:grid; grid-template-columns:48px minmax(0,1fr); gap:13px; margin:0 0 14px; }
 #main-menu .mode-card-icon { width:48px; height:57px; border:1px solid #9b75b6; background:#1a0c2a; }
-#main-menu .mode-card-main h3 { font:12px/1.5 'Press Start 2P',monospace; color:#ffe6ac; margin:0 0 7px; }
-#main-menu .mode-card-main p { font:18px/1.08 'VT323',monospace; color:#c3a9d3; margin:0; }
+#main-menu .mode-card-main h3 { font:12px/1.5 'Press Start 2P',monospace; color:#ffdc58; margin:0 0 7px; }
+#main-menu .mode-card-main p { font:8px/1.5 'Press Start 2P',monospace; color:#e0d4df; margin:0; }
 #main-menu .mode-card-options { gap:7px; margin-bottom:10px; }
 #main-menu .mode-card-options label { background:#1c0d2c; border:1px solid #69437d; padding:6px; font-size:7px; color:#cbb1db; }
 #main-menu .menu-mode-card>.pixel-btn { width:100%; min-height:44px; padding:12px 8px !important; font-size:8px !important; line-height:1.4; border-width:2px; border-radius:0; box-shadow:inset -3px -4px #160a2250,2px 2px #10071a; letter-spacing:0; }
-#main-menu #btn-start-game { background:#bd90f0; color:#251037; border-color:#e0bcff; }
-#main-menu #btn-start-tenpin { background:#91cfde; color:#192033; border-color:#c1e7e6; }
-#main-menu .arcade-center-stage { display:flex; flex-direction:column; position:relative; min-height:0; border:2px solid #79509c; background:radial-gradient(ellipse at 50% 36%,#6f378944,transparent 67%),linear-gradient(#221330,#120a21); box-shadow:inset 0 0 0 3px #160a24,3px 3px #0a0415; overflow:hidden; }
-#main-menu .attract-tag { position:absolute; top:18px; left:12px; right:12px; text-align:center; color:#af85ca; font:10px/1.2 'VT323',monospace; letter-spacing:.16em; pointer-events:none; }
-#main-menu .central-bowling-graphic { position:relative; flex:1; display:grid; place-items:center; inset:auto; transform:none; min-height:140px; padding:25px 12px 8px; }
-#main-menu .central-bowling-graphic svg { width:100%; max-height:310px; filter:drop-shadow(0 9px 14px #0005); }
-#main-menu .central-bowling-graphic .burst.back { fill:#583151; stroke:#ab694955; }
-#main-menu .central-bowling-graphic .burst.front { fill:#dc9955; }
+#main-menu #btn-start-game { background:#059669; color:#fff3cd; border-color:#45e8ac; }
+#main-menu #btn-start-tenpin { background:#087f9a; color:#fff3cd; border-color:#5de0f4; }
+#main-menu .arcade-center-stage { display:flex; flex-direction:column; position:relative; min-height:0; border:2px solid #8c3ef3; background:radial-gradient(ellipse at 50% 36%,#ee813025,transparent 65%),linear-gradient(#251131,#10071e); box-shadow:inset 0 0 0 3px #160a24,3px 3px #0a0415; overflow:hidden; }
+#main-menu .central-bowling-graphic { width:100%; min-width:0; align-self:stretch; position:relative; flex:1; display:grid; place-items:center; inset:auto; transform:none; min-height:140px; padding:25px 12px 8px; }
+#main-menu .central-bowling-graphic svg { width:100%; max-height:420px; filter:drop-shadow(0 9px 14px #0005); }
+#main-menu .central-bowling-graphic .burst.back { fill:#7c2d12; stroke:none; }
+#main-menu .central-bowling-graphic .burst.front { fill:url(#pinfallFlame); }
 #main-menu .player-hub-panel { position:relative; bottom:auto; left:auto; right:auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:auto; padding:22px 12px 12px; background:#251633; border-top:2px solid #775190; }
-#main-menu .hub-label { top:-13px; background:#28163e; border:2px solid #a67bc5; padding:6px 12px; font-size:9px; color:#f9d794; }
-#main-menu .hub-btn { min-height:37px; padding:9px 6px; border:2px solid #725187; background:#3a284b; color:#e7cde5; font-size:7px !important; line-height:1.4; box-shadow:inset -2px -3px #1d0d2d; }
+#main-menu .hub-label { top:-13px; background:#28163e; border:2px solid #a67bc5; padding:6px 12px; font-size:9px; color:#ffdd77; }
+#main-menu .hub-btn { min-height:37px; padding:9px 6px; border:2px solid #725187; background:#3a284b; color:#fff0d1; font-size:7px !important; line-height:1.4; box-shadow:inset -2px -3px #1d0d2d; }
 #main-menu .primary-hub-btn { grid-column:auto; background:#4b315f; }
-#main-menu .daily-panel { display:flex; flex-direction:column; gap:0; min-height:0; overflow:auto; padding:15px 14px; border:2px solid #79529c; background:linear-gradient(145deg,#30203f,#1b102d); box-shadow:inset 0 0 0 3px #170b27,3px 3px #0c0618; }
-#main-menu .daily-title { width:auto; align-self:flex-start; margin:0 0 13px; padding:0 0 10px; border:0; border-bottom:2px solid #9665b9; color:#ffda8d; font:12px/1.5 'Press Start 2P',monospace; }
+#main-menu .daily-panel { display:flex; flex-direction:column; gap:0; min-height:0; overflow:auto; padding:15px 14px; border:2px solid #8c3ef3; background:linear-gradient(145deg,#22132f,#160b24); box-shadow:inset 0 0 0 3px #170b27,3px 3px #0c0618; }
+#main-menu .daily-title { width:auto; align-self:flex-start; margin:0 0 13px; padding:0 0 10px; border:0; border-bottom:2px solid #a773e3; color:#ffda8d; font:12px/1.5 'Press Start 2P',monospace; }
 #main-menu .daily-summary { margin:0 0 11px; font:23px/1.05 'VT323',monospace; color:#e6cce8; }
-#main-menu .daily-date-chip { display:inline-block; margin:5px 0 0 5px; padding:2px 5px; background:#4a3058; border-color:#9b739a; font-size:15px; color:#ffdc92; }
-#main-menu .daily-score-card { padding:8px; min-height:32px; margin:0 0 8px; font:15px/1 'VT323',monospace; background:#1b0d2b; border:1px solid #8d6b8f; color:#e7cf9c; }
+#main-menu .daily-date-chip { display:inline-block; margin:5px 0 0 5px; padding:2px 5px; background:#5c381d; border-color:#c69a4c; font-size:15px; color:#ffdc92; }
+#main-menu .daily-score-card { padding:8px; min-height:32px; margin:0 0 8px; font:15px/1 'VT323',monospace; background:#1b0d2b; border:1px solid #ad853e; color:#ffe064; }
 #main-menu .daily-start-btn { padding:10px 6px; min-height:37px; margin:0 0 4px; border:2px solid #b0e4d5; background:#77bfae; color:#172631; box-shadow:inset -3px -3px #2c665c; font-size:7px; }
-#main-menu .daily-panel h3 { margin:11px 0 7px; color:#b995d0; font:14px/1 'VT323',monospace; letter-spacing:.08em; }
+#main-menu .daily-panel h3 { margin:11px 0 7px; color:#ffd571; font:14px/1 'VT323',monospace; letter-spacing:.08em; }
 #main-menu .daily-icon-grid { gap:7px; }
-#main-menu .daily-icon-card { height:46px; min-height:0; padding:6px; border:1px solid #8d6aa3; background:#392449; box-shadow:inset -2px -3px #190c2b; }
-#main-menu .daily-icon-card:hover,#main-menu .daily-icon-card.active { background:#65447b; border-color:#d7afea; }
-#main-menu .daily-icon-card svg { height:30px; width:100%; stroke:#edcfad; }
+#main-menu .daily-icon-card { height:46px; min-height:0; padding:6px; border:2px solid #70583c; box-shadow:inset -2px -3px #190c2b; }
+#main-menu .daily-icon-card:hover,#main-menu .daily-icon-card.active { filter:brightness(1.18); border-color:#ffe095; }
+#main-menu .daily-icon-card svg { height:30px; width:100%; stroke:#fff0d1; }
 #main-menu .menu-control-strip { position:relative; inset:auto; display:flex; align-items:center; justify-content:center; gap:7px; width:100%; max-width:none; margin:0; padding:8px; border:0; border-top:1px solid #73508d; background:none; color:#9278a1; font:12px/1.1 'VT323',monospace; box-shadow:none; white-space:normal; }
 #main-menu .menu-control-strip b { color:#e4bd7b; background:none; border:0; font-size:12px; }
 #main-menu .run-slots { display:grid; gap:6px; margin-top:11px; }
@@ -124,7 +121,6 @@
 .slot-arrow { color:#bc91de; font:22px/1 'VT323',monospace; }
 .slot-progress { display:block; margin-top:5px; height:3px; background:#493058; }
 .slot-progress i { display:block; height:100%; background:#b488de; }
-#main-menu .arcade-center-stage.is-panel-mode .attract-tag { display:none; }
 #main-menu .menu-center-content { position:absolute; inset:0 0 120px; padding:15px; background:#211230; overflow:auto; z-index:6; }
 #main-menu .menu-center-content.hidden { display:none; }
 #main-menu .menu-center-header { margin-bottom:12px; }
@@ -366,7 +362,7 @@
     #main-menu .mode-card-main { grid-template-columns:42px 1fr; gap:12px; margin-bottom:11px; }
     #main-menu .mode-card-icon { width:42px; height:46px; }
     #main-menu .mode-card-main h3 { font-size:11px; }
-    #main-menu .mode-card-main p { font-size:18px; }
+    #main-menu .mode-card-main p { font-size:8px; }
     #main-menu .mode-card-topline { font-size:9px; }
     #main-menu .menu-mode-card>.pixel-btn { min-height:42px; font-size:8px !important; }
     #main-menu .mode-card-options { display:flex; }
@@ -377,7 +373,6 @@
     #main-menu .arcade-center-stage { min-height:320px; flex-shrink:0; }
     #main-menu .central-bowling-graphic { min-height:210px; padding-top:23px; }
     #main-menu .central-bowling-graphic svg { max-height:190px; }
-    #main-menu .attract-tag { font-size:8px; top:12px; }
     #main-menu .arcade-center-stage.is-panel-mode { min-height:620px; }
     #main-menu .menu-center-content { inset:0 0 118px; padding:14px; }
     #main-menu .daily-panel { display:flex; flex-shrink:0; padding:14px; }
@@ -386,8 +381,6 @@
     #main-menu .daily-icon-card { height:47px; }
     #main-menu .menu-control-strip { font-size:9px; gap:4px; flex-wrap:wrap; padding:6px 0 0; }
     #main-menu .menu-control-strip b { font-size:10px; }
-    #main-menu .arcade-corner { width:26px; height:26px; }
-    #main-menu .arcade-corner svg { width:18px; height:18px; }
     #main-menu .rail-top,#main-menu .rail-bottom { left:36px; right:36px; height:2px; }
     #main-menu .rail-left,#main-menu .rail-right { top:36px; bottom:36px; width:2px; }
     #route-screen #route-title,#shop-screen .proshop-header h2 { font-size:16px !important; line-height:1.4 !important; }
@@ -514,12 +507,12 @@
 }
 /* Fit three saved runs without pushing the classic launch off the cabinet. */
 #main-menu .arcade-left-stack { justify-content:flex-start; }
-#main-menu .menu-mode-card { background:radial-gradient(ellipse at 0 0,#70429940,transparent 80%),#27173a !important; border-color:#8858b8 !important; animation:none; }
-#main-menu .menu-mode-rogue { border-top-color:#bd91ed !important; }
-#main-menu .menu-mode-tenpin { border-top-color:#89c4d2 !important; }
-#main-menu .hub-btn { background:#442a5c !important; border-color:#9366b3 !important; color:#ebd2f4 !important; }
-#main-menu .hub-btn:hover { background:#674080 !important; border-color:#dbb4f4 !important; }
-#main-menu .daily-start-btn { background:#91cbb7 !important; color:#202235 !important; }
+#main-menu .menu-mode-card { background:linear-gradient(135deg,#ffffff08,transparent 30%),repeating-linear-gradient(135deg,#ffffff06 0 7px,transparent 7px 16px),#1a0e29 !important; border-color:#923bed !important; animation:none; }
+#main-menu .menu-mode-rogue { border-top-color:#36d6a3 !important; }
+#main-menu .menu-mode-tenpin { border-top-color:#54d4ed !important; }
+#main-menu .hub-btn { color:#fff0d1 !important; }
+#main-menu .hub-btn:hover { filter:brightness(1.15); }
+#main-menu .daily-start-btn { background:#0f766e !important; color:#fff1ce !important; }
 #main-menu .menu-mode-card::before,#main-menu .menu-mode-card::after { display:none; }
 @media (min-width:1001px) and (max-height:800px) {
     #main-menu .run-slot { padding:4px 8px !important; }
@@ -539,7 +532,7 @@
 @media (min-width:1001px) and (max-height:800px) {
     #main-menu .menu-mode-card { padding:8px !important; }
     #main-menu .mode-card-main { margin-bottom:6px; }
-    #main-menu .mode-card-main p { font-size:17px; line-height:1.05; }
+    #main-menu .mode-card-main p { font-size:8px; line-height:1.5; }
     #main-menu .arcade-left-stack { gap:10px; }
 }
 #score-hud-panel,#game-hud>div:first-child>.hud-panel:last-child { background:linear-gradient(145deg,#281735f5,#150c24ef); border-color:#a97b8c; }
@@ -597,3 +590,23 @@
 #route-screen .circuit-shell { grid-template-columns:minmax(0,1fr); }
 #route-screen .circuit-header>div:first-child { min-width:0; max-width:none; flex:1; }
 #route-screen #route-title { white-space:normal; }
+
+/* Restore the original multicolor arcade controls and daily tiles. */
+#main-menu .menu-mode-tenpin .mode-card-main h3 { color:#79e7ff; }
+#main-menu .mode-card-icon-route { border-color:#8b5cf6; }
+#main-menu .mode-card-icon-route svg { stroke:#3ce6ad; }
+#main-menu .mode-card-icon-score { border-color:#8b5cf6; }
+#main-menu .mode-card-icon-score svg { stroke:#67e8f9; }
+#main-menu .daily-icon-card.route { background-color:#3b2352; }
+#main-menu .daily-icon-card.oil { background-color:#173f48; }
+#main-menu .daily-icon-card.split { background-color:#6b3d21; }
+#main-menu .daily-icon-card.boss { background-color:#102d44; }
+#main-menu .daily-icon-card.shop { background-color:#0f766e; }
+#main-menu .daily-icon-card.bag { background-color:#b7791f; }
+#main-menu .daily-icon-card.medal svg { stroke:#facc15; }
+#main-menu #btn-start-game:hover { background:#08b780; }
+#main-menu #btn-start-tenpin:hover { background:#0d9ebc; }
+@media (min-width:1001px) {
+    #main-menu .player-hub-panel { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    #main-menu .primary-hub-btn { grid-column:1 / -1; }
+}
