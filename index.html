@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./styles/ui.css">
     <link rel="stylesheet" href="./styles/debug.css">
     <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
+    <link rel="stylesheet" href="./styles/arcade.css?v=20261019e">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -197,6 +198,8 @@
             </div>
         </div>
     </div>
+
+    <div id="boss-battle-hud" hidden><span class="boss-hud-label">HOUSE BOSS</span><b id="boss-hud-name"></b><div class="boss-target-track"><i id="boss-hud-fill"></i></div><span id="boss-hud-progress"></span></div>
 
     <!-- MAIN MENU OVERLAY -->
     <div id="main-menu" class="pinfall-menu absolute inset-0 bg-[#0c0617]/95 flex flex-col items-center justify-center p-6 z-50 overflow-y-auto">
@@ -410,13 +413,20 @@
     </div>
 
     <div id="boss-intro-screen" class="boss-intro-screen absolute inset-0 z-[63] hidden p-6">
-        <div class="boss-intro-panel">
-            <div id="boss-intro-sigil" class="boss-intro-sigil"><i class="fa-solid fa-crown"></i></div>
-            <span>Boss Lane</span>
-            <h2 id="boss-intro-title">Split King</h2>
-            <p id="boss-intro-desc">Two royal clusters sit far apart.</p>
-            <div id="boss-intro-rule" class="boss-intro-rule">Target pressure rises.</div>
-            <button id="btn-start-boss" class="pixel-btn px-8 py-4 bg-red-700 border-red-400 text-[12px] font-bold uppercase">Face The Lane</button>
+        <div class="boss-intro-panel" role="dialog" aria-modal="true" aria-labelledby="boss-intro-title">
+            <div class="boss-warning-strip" aria-hidden="true">CHALLENGER APPROACHING / CHALLENGER APPROACHING / CHALLENGER APPROACHING</div>
+            <div class="boss-reveal-body">
+                <div class="boss-reveal-art"><div id="boss-intro-sigil" class="boss-intro-sigil"></div><span id="boss-intro-number">HOUSE BOSS 01</span></div>
+                <div class="boss-reveal-copy">
+                    <span id="boss-intro-kicker" class="arcade-eyebrow">STAGE SHOWDOWN</span>
+                    <h2 id="boss-intro-title">Split King</h2>
+                    <div id="boss-intro-motto"></div>
+                    <p id="boss-intro-desc">Two royal clusters sit far apart.</p>
+                    <div id="boss-intro-rule" class="boss-intro-rule"></div>
+                    <button id="btn-start-boss" class="arcade-launch">LET'S BOWL <span aria-hidden="true">↗</span></button>
+                </div>
+            </div>
+            <div class="boss-reveal-footer"><span>NO GUTS. NO GLORY.</span><span>THREE THROWS. ONE HOUSE TO BEAT.</span></div>
         </div>
     </div>
 
@@ -457,24 +467,25 @@
     </div>
 
     <!-- ROUTE MAP OVERLAY -->
-    <div id="route-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[45] hidden overflow-y-auto">
-        <div class="lounge-panel max-w-7xl w-full pixel-border p-8 flex flex-col gap-7">
-            <div class="flex flex-col md:flex-row md:items-end justify-between border-b border-[#6d5944] pb-5 gap-5">
-                <div>
-                    <h2 id="route-title" class="text-2xl font-bold text-[#f2c36b]">CHOOSE A LANE</h2>
-                    <p id="route-subtitle" class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Pick your next risk. Harder lanes pay better.</p>
+    <div id="route-screen" class="absolute inset-0 z-[45] hidden">
+        <div class="circuit-shell">
+            <header class="circuit-header">
+                <div><span class="arcade-eyebrow">PINFALL / THE AFTER-HOURS CIRCUIT</span><h2 id="route-title">RULE THE HOUSE<span>.</span></h2></div>
+                <div class="circuit-run-status"><span>STAGE <b id="route-stage">1</b> / 3</span><span>FRAME <b id="route-frame">1</b> / 12</span><strong id="route-bank">$ 2</strong></div>
+            </header>
+            <nav id="route-districts" class="circuit-districts" aria-label="Circuit districts"></nav>
+            <div class="circuit-main">
+                <div id="route-map-container" class="route-map-board">
+                    <div id="route-district-art" class="district-scenery"></div>
+                    <div class="district-caption"><span id="route-district-tag"></span><b id="route-district-name"></b></div>
+                    <div id="route-frame-markers" aria-hidden="true"></div>
+                    <svg id="route-map-lines" aria-hidden="true"></svg>
+                    <div id="route-options-container" aria-label="Lane routes"></div>
+                    <div class="circuit-map-key"><span><i></i> YOUR NEXT LANE</span><span>◆ HOUSE BOSS</span></div>
                 </div>
-                <div class="text-[12px] text-[#f2c36b] border-2 border-[#8a6840] px-4 py-3 bg-[#2b1a0f]/80">
-                    STAGE <span id="route-stage">1</span> / FRAME <span id="route-frame">2</span> / 12
-                </div>
-                <div id="route-seed-chip" class="seed-chip hidden">SEED <span></span></div>
+                <aside id="route-choice-panel" aria-label="Lane preview" aria-live="polite"></aside>
             </div>
-            <div id="route-map-container" class="route-map-board p-5">
-                <svg id="route-map-lines" class="pointer-events-none opacity-90"></svg>
-                <div id="route-options-container"></div>
-                <div id="route-tooltip" class="route-map-tooltip hidden"><strong></strong><span></span></div>
-            </div>
-            <aside id="route-choice-panel" class="route-detail-panel"></aside>
+            <footer class="circuit-footer"><p id="route-subtitle">Pick your lane. Make your name.</p><div id="route-seed-chip" class="seed-chip hidden">SEED <span></span></div><span class="circuit-controls-hint">SELECT A STOP → ENTER THE LANE</span></footer>
         </div>
     </div>
 
@@ -509,6 +520,8 @@
                 <button data-debug-action="route">Open Route Map</button>
                 <button data-debug-action="freshRack">Fresh Rack</button>
                 <button data-debug-action="stressRack">120-Pin Stress Test</button>
+                <button data-debug-action="bossShowdown">Boss Showdown Test</button>
+                <button data-debug-action="finalShowdown">Final Boss Test</button>
                 <button data-debug-action="dailyReview">Review Daily Runs</button>
             </div>
         </div>
@@ -616,6 +629,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019d"></script>
+    <script type="module" src="./src/main.js?v=20261019e"></script>
 </body>
 </html>

@@ -10,7 +10,11 @@ import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from 
 import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js';
 import { initPhysics } from '../physics/rapierShim.js?v=20261019d';
 import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './laneLayout.js';
-import { createLanePresentation } from '../scene/presentation.js';
+import { createLanePresentation } from '../scene/presentation.js?v=20261019e';
+import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, stageConnections, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019e';
+
+let displayedRouteStage = 1;
+let routePreviewNodeId = '';
 
 const RUN_SAVE_KEY = 'pinfallRunSlotsV1';
 const PROFILE_KEY = 'pinfallProfileV1';
@@ -2495,7 +2499,8 @@ function buildMegaLaneVisual(laneWidth = LANE.currentWidth) {
             width: laneWidth, length: laneLength(), origin: laneOrigin(),
             pins: currentRackLayout().points.length, frame: GAME.frame,
             approachLength: currentLaneDimensions().approachLength,
-            cameraBack: laneCameraDistance(laneWidth, camera.aspect, camera.fov)
+            cameraBack: laneCameraDistance(laneWidth, camera.aspect, camera.fov),
+            route: GAME.mode === 'roguelike' ? GAME.currentRoute : null, stage: GAME.stage
         });
         presentation.setVisible(debugState.config.showMegaLane);
         return;
@@ -5016,6 +5021,15 @@ function runDebugAction(action) {
         }
         return;
     }
+    if (action === 'bossShowdown' || action === 'finalShowdown') {
+        document.getElementById('main-menu').classList.add('hidden');
+        startNewRun();
+        GAME.frame = action === 'finalShowdown' ? 11 : 3;
+        GAME.cash = 30;
+        GAME.completedNodes = GAME.routeMap.slice(0, GAME.frame).map(row => row[0].id);
+        showRouteMap();
+        return;
+    }
     if (action === 'stressRack') {
         startPractice(12);
         return;
@@ -6179,6 +6193,7 @@ function attachPinImpactSound(pin) {
             sfx.playPinStrike(speed);
             triggerCameraShake(Math.min(0.22, speed * 0.025));
             if (speed > 4.2) createPinImpactFlash(pin.body.position, speed);
+            if (other === ballBody && speed > 4.2) presentation?.impact(pin.body.position, GAME.currentRoute?.boss ? new THREE.Color(routeTheme(GAME.currentRoute).color).getHex() : 0xffc783);
         }
     });
 }
@@ -7356,7 +7371,8 @@ function triggerShopTransition() {
     document.getElementById('debug-actions-screen').classList.add('hidden');
     document.getElementById('btn-tenpin-reroll-shop').classList.add('hidden');
     document.getElementById('btn-shop-reroll').classList.remove('hidden');
-    document.querySelector('#shop-screen h2').innerText = 'FRAME CLEARED!';
+    document.getElementById('shop-screen').classList.toggle('boss-cleared', Boolean(GAME.currentRoute?.boss));
+    document.querySelector('#shop-screen h2').innerText = GAME.currentRoute?.boss ? 'HOUSE BOSS DEFEATED!' : 'FRAME CLEARED!';
     document.querySelector('#shop-screen p').innerText = 'Shop or continue to the route map for your next lane.';
     document.getElementById('shop-next-goal-row').classList.remove('hidden');
 
@@ -7574,50 +7590,8 @@ function buildRouteMap() {
     return rows;
 }
 
-function routeNodePosition(node) {
-    if (isPortraitMobileLayout()) {
-        const centeredNode = node.frame % 4 === 0 || node.frame === 1;
-        const x = centeredNode ? 50 : [28, 50, 72][node.index] || 50;
-        const y = ((node.frame - 0.5) / GAME.maxFrames) * 100;
-        return { x, y };
-    }
-    const x = ((node.frame - 0.5) / GAME.maxFrames) * 100;
-    const centeredNode = node.frame % 4 === 0 || node.frame === 1;
-    const y = centeredNode ? 50 : [22, 50, 78][node.index] || 50;
-    return { x, y };
-}
-
 function isPortraitMobileLayout() {
     return window.matchMedia?.('(max-width: 760px) and (orientation: portrait)')?.matches;
-}
-
-function scrollRouteMapToFrame(frameNumber) {
-    if (!isPortraitMobileLayout()) return;
-    const mapBoard = document.getElementById('route-map-container');
-    if (!mapBoard) return;
-    const contentHeight = mapBoard.scrollHeight;
-    const visibleHeight = mapBoard.clientHeight;
-    if (contentHeight <= visibleHeight) return;
-    const progress = THREE.MathUtils.clamp((frameNumber - 0.5) / GAME.maxFrames, 0, 1);
-    const target = (contentHeight * progress) - (visibleHeight * 0.42);
-    mapBoard.scrollTo({
-        top: THREE.MathUtils.clamp(target, 0, contentHeight - visibleHeight),
-        behavior: 'auto'
-    });
-}
-
-function routeIcon(route) {
-    if (route.layout === 'start') return '<i class="fa-solid fa-house-chimney"></i>';
-    if (route.event) return '<i class="fa-solid fa-question"></i>';
-    if (route.boss) return '<i class="fa-solid fa-crown"></i>';
-    if (route.layout === 'split') return '<i class="fa-solid fa-code-branch"></i>';
-    if (route.layout === 'messy') return '<i class="fa-solid fa-shuffle"></i>';
-    if (route.layout === 'fragile') return '<i class="fa-solid fa-wand-sparkles"></i>';
-    if (route.layout === 'wide') return '<i class="fa-solid fa-arrows-left-right"></i>';
-    if (route.id === 'oil') return '<i class="fa-solid fa-droplet"></i>';
-    if (route.id === 'heavy') return '<i class="fa-solid fa-weight-hanging"></i>';
-    if (route.id === 'gutter') return '<i class="fa-solid fa-down-long"></i>';
-    return '<i class="fa-solid fa-bowling-ball"></i>';
 }
 
 function escapeHtml(value) {
@@ -7643,52 +7617,6 @@ function renderVocabularyText(value) {
 
 function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function routeTooltip(route, frame) {
-    const targetMod = route.targetMod || 0;
-    const targetLabel = `${targetMod >= 0 ? '+' : ''}${targetMod}`;
-    if (route.event) {
-        return {
-            title: `FRAME ${frame}: ${route.name}`,
-            body: [route.desc, 'Choose one offer. This consumes the map step, then you visit the shop.'].join('\n')
-        };
-    }
-    return {
-        title: `FRAME ${frame}: ${route.name}`,
-        body: [
-            route.desc,
-            `Reward: +${route.reward || 0} Pin Dollars`,
-            `Target: ${targetLabel}`,
-            `Throws: ${route.boss ? '3' : route.rollBonus > 0 ? '+1' : 'normal'}`,
-            `Rack: ${route.layout}`
-        ].join('\n')
-    };
-}
-
-function moveRouteTooltip(event) {
-    const tooltip = document.getElementById('route-tooltip');
-    if (!tooltip || tooltip.classList.contains('hidden')) return;
-    const padding = 18;
-    const box = tooltip.getBoundingClientRect();
-    const x = Math.min(window.innerWidth - box.width - padding, event.clientX + 16);
-    const y = Math.min(window.innerHeight - box.height - padding, event.clientY + 16);
-    tooltip.style.left = `${Math.max(padding, x)}px`;
-    tooltip.style.top = `${Math.max(padding, y)}px`;
-}
-
-function showRouteTooltip(event, card) {
-    const tooltip = document.getElementById('route-tooltip');
-    if (!tooltip) return;
-    tooltip.querySelector('strong').innerText = card.dataset.tooltipTitle || '';
-    tooltip.querySelector('span').innerText = card.dataset.tooltipBody || '';
-    tooltip.classList.remove('hidden');
-    moveRouteTooltip(event);
-}
-
-function hideRouteTooltip() {
-    const tooltip = document.getElementById('route-tooltip');
-    if (tooltip) tooltip.classList.add('hidden');
 }
 
 function startNewRun(options = {}) {
@@ -7731,7 +7659,6 @@ function showRouteMap() {
         endRun(true);
         return;
     }
-
     const nextFrame = GAME.frame + 1;
     if (!GAME.routeMap.length) GAME.routeMap = buildSeededRouteMap();
     GAME.routeOptions = GAME.routeMap[nextFrame - 1].map(node => ({ ...node.route, nodeId: node.id }));
@@ -7739,118 +7666,108 @@ function showRouteMap() {
     autoSaveRunSlot();
     document.getElementById('shop-screen').classList.add('hidden');
     document.getElementById('route-screen').classList.remove('hidden');
-    document.getElementById('route-stage').innerText = stageForFrame(nextFrame);
-    document.getElementById('route-frame').innerText = nextFrame;
-    document.getElementById('route-title').innerText = nextFrame === 1 ? 'ROUTE MAP' : nextFrame % 4 === 0 ? 'BOSS LANE AHEAD' : 'CHOOSE A LANE';
-    document.getElementById('route-subtitle').innerText = nextFrame === 1 ? 'Start with a clean house rack, then route into stranger lanes.' : nextFrame % 4 === 0 ? 'Stage boss frames bend the rules. Survive to keep the run alive.' : 'Pick your next risk. Harder lanes pay better.';
+    document.getElementById('route-stage').textContent = stageForFrame(nextFrame);
+    document.getElementById('route-frame').textContent = nextFrame;
+    document.getElementById('route-bank').textContent = `$ ${uiNumber(GAME.cash)}`;
+    document.getElementById('route-title').innerHTML = nextFrame % 4 === 0 ? 'THE HOUSE FIGHTS BACK<span>.</span>' : 'RULE THE HOUSE<span>.</span>';
+    document.getElementById('route-subtitle').textContent = nextFrame % 4 === 0 ? 'House boss ahead. Make every throw count.' : 'Pick your lane. Make your name.';
+    displayedRouteStage = stageForFrame(nextFrame);
+    routePreviewNodeId = GAME.routeMap[nextFrame - 1][0].id;
     updateSeedDisplays();
+    renderRouteDistrict();
+}
 
+function renderRouteDistrict() {
+    const nextFrame = GAME.frame + 1;
+    const district = districtForStage(displayedRouteStage);
+    const screen = document.getElementById('route-screen');
+    screen.style.setProperty('--district', district.color);
+    screen.style.setProperty('--district-dark', district.dark);
+    document.getElementById('route-district-name').textContent = district.name;
+    document.getElementById('route-district-tag').textContent = district.tag;
+    document.getElementById('route-district-art').innerHTML = districtBackdrop(displayedRouteStage);
+    const districts = document.getElementById('route-districts');
+    districts.innerHTML = DISTRICTS.map((item, index) => {
+        const stage = index + 1;
+        const cleared = GAME.frame >= stage * 4;
+        return `<button type="button" aria-pressed="${stage === displayedRouteStage}" data-stage="${stage}" style="--tab-color:${item.color}"><span class="district-number">${cleared ? '✓' : `0${stage}`}</span><span><small>${cleared ? 'HOUSE CLEARED' : stage === stageForFrame(nextFrame) ? 'YOU ARE HERE' : 'ON THE CIRCUIT'}</small><b>${item.name}</b></span><span class="district-tab-frames">${index*4+1}—${stage*4}</span></button>`;
+    }).join('');
+    districts.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+        displayedRouteStage = Number(button.dataset.stage);
+        const rows = GAME.routeMap.slice((displayedRouteStage - 1) * 4, displayedRouteStage * 4);
+        routePreviewNodeId = rows.flat().find(node => node.frame === nextFrame)?.id || rows.at(-1)[0].id;
+        sfx.playTick();
+        renderRouteDistrict();
+    }));
+    document.getElementById('route-frame-markers').innerHTML = Array.from({ length: 4 }, (_, index) => `<span style="--stop:${index}">${index === 3 ? 'SHOWDOWN' : `FRAME ${String((displayedRouteStage - 1) * 4 + index + 1).padStart(2, '0')}`}</span>`).join('');
     const container = document.getElementById('route-options-container');
-    const mapBoard = document.getElementById('route-map-container');
-    const choicePanel = document.getElementById('route-choice-panel');
     container.innerHTML = '';
-    choicePanel.innerHTML = '';
-    drawRouteMapLines();
-    GAME.routeMap.flat().forEach((node) => {
-        const route = { ...node.route, nodeId: node.id };
+    GAME.routeMap.slice((displayedRouteStage - 1) * 4, displayedRouteStage * 4).flat().forEach(node => {
+        const { route } = node;
         if (route.boss && node.frame <= nextFrame) rememberLegendSeen('bosses', route.id);
-        const isCurrent = node.frame === nextFrame;
-        const isCompleted = GAME.completedNodes.includes(node.id);
+        const current = node.frame === nextFrame;
+        const completed = GAME.completedNodes.includes(node.id);
+        const passed = node.frame < nextFrame && !completed;
         const card = document.createElement('button');
-        const pos = routeNodePosition(node);
-        const tooltip = routeTooltip(route, node.frame);
+        const theme = routeTheme(route);
         card.type = 'button';
-        card.style.left = `${pos.x}%`;
-        card.style.top = `${pos.y}%`;
-        card.dataset.tooltipTitle = tooltip.title;
-        card.dataset.tooltipBody = tooltip.body;
-        card.className = `route-node ${route.boss ? 'boss' : ''} ${isCompleted ? 'visited' : ''} ${isCurrent ? 'current' : 'locked'}`;
-        card.setAttribute('aria-label', tooltip.title);
-        card.setAttribute('aria-disabled', String(!isCurrent));
-        card.innerHTML = `
-            <span class="route-node-icon">${routeIcon(route)}</span>
-            <span class="route-node-label">${node.frame}</span>
-            <span class="route-node-name">${escapeHtml(route.label)}</span>
-        `;
-        card.addEventListener('mouseenter', (event) => showRouteTooltip(event, card));
-        card.addEventListener('mousemove', moveRouteTooltip);
-        card.addEventListener('mouseleave', hideRouteTooltip);
-        card.addEventListener('focus', (event) => showRouteTooltip(event, card));
-        card.addEventListener('blur', hideRouteTooltip);
-        card.addEventListener('click', () => chooseRouteByNode(node.id));
+        card.dataset.nodeId = node.id;
+        card.style.setProperty('--lane-color', theme.color);
+        card.className = `circuit-stop ${route.boss ? 'is-boss' : ''} ${current ? 'is-current' : ''} ${completed ? 'is-cleared' : ''} ${passed ? 'is-bypassed' : ''}`;
+        card.setAttribute('aria-label', `Frame ${node.frame}: ${route.name}${current ? ', available' : completed ? ', cleared' : ', preview'}`);
+        card.setAttribute('aria-pressed', String(node.id === routePreviewNodeId));
+        card.innerHTML = `<span class="stop-platform">${laneArtwork(route)}</span><span class="stop-name">${escapeHtml(route.boss ? route.name : route.label)}</span><span class="stop-status">${completed ? '✓ CLEARED' : current ? 'PLAY NEXT' : route.boss ? 'HOUSE BOSS' : String(node.frame).padStart(2, '0')}</span>`;
+        card.addEventListener('click', () => {
+            routePreviewNodeId = node.id;
+            container.querySelectorAll('button').forEach(other => other.setAttribute('aria-pressed', String(other === card)));
+            sfx.playTick();
+            renderRoutePreview();
+        });
         container.appendChild(card);
     });
+    drawRouteMapLines();
+    renderRoutePreview();
+}
 
-    choicePanel.innerHTML = GAME.routeOptions.map((route, index) => `
-        <div class="route-choice-detail" style="animation-delay:${index * 0.045}s">
-            <b>${routeIcon(route)} ${escapeHtml(route.name)}</b>
-            <span>${renderVocabularyText(route.desc)}</span>
-        </div>
-    `).join('');
-    requestAnimationFrame(() => scrollRouteMapToFrame(nextFrame));
+function renderRoutePreview() {
+    const node = GAME.routeMap.flat().find(item => item.id === routePreviewNodeId);
+    if (!node) return;
+    const route = node.route, theme = routeTheme(route);
+    const available = node.frame === GAME.frame + 1;
+    const cleared = GAME.completedNodes.includes(node.id);
+    const count = (node.frame + 3) * (node.frame + 4) / 2;
+    const panel = document.getElementById('route-choice-panel');
+    panel.style.setProperty('--lane-color', theme.color);
+    panel.classList.toggle('is-boss-preview', Boolean(route.boss));
+    panel.innerHTML = `<div class="preview-topline"><span>${route.boss ? 'HOUSE BOSS' : route.event ? 'MYSTERY STOP' : 'LANE SELECT'}</span><b>F${String(node.frame).padStart(2, '0')}</b></div>
+        <div class="route-preview-art">${laneArtwork(route)}<span>${theme.title}</span></div>
+        <div class="route-preview-copy"><span class="arcade-eyebrow">${available ? 'YOUR NEXT CHALLENGE' : cleared ? 'HOUSE CLEARED' : 'COMING UP ON THE CIRCUIT'}</span><h3>${escapeHtml(route.name)}</h3><p>${renderVocabularyText(route.desc)}</p></div>
+        <div class="route-preview-stats"><div><b>${route.event ? '?' : count}</b><span>${route.event ? 'DETOUR' : 'PINS'}</span></div><div><b>${route.boss ? '3' : route.rollBonus ? '+1' : '—'}</b><span>${route.boss ? 'THROWS' : 'BONUS THROW'}</span></div><div><b>${route.event ? '?' : `+${Math.ceil((route.reward || 0) * .75)}`}</b><span>ENTRY CASH</span></div></div>
+        <button class="arcade-launch" type="button" ${available ? '' : 'disabled'}>${available ? route.boss ? 'FACE THE HOUSE' : route.event ? 'TAKE THE DETOUR' : 'ENTER THE LANE' : cleared ? 'CLEARED' : 'UP AHEAD'}<span aria-hidden="true">${available ? '↗' : '◇'}</span></button>`;
+    panel.querySelector('button').addEventListener('click', () => chooseRouteByNode(node.id));
 }
 
 function drawRouteMapLines() {
     const svg = document.getElementById('route-map-lines');
-    if (!svg) return;
-    svg.innerHTML = '';
+    if (!svg || !GAME.routeMap.length) return;
+    const portrait = isPortraitMobileLayout();
+    const nextFrame = GAME.frame + 1;
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('preserveAspectRatio', 'none');
-    if (isPortraitMobileLayout()) {
-        for (let frame = 1; frame < GAME.maxFrames; frame++) {
-            const y1 = ((frame - 0.5) / GAME.maxFrames) * 100;
-            const y2 = ((frame + 0.5) / GAME.maxFrames) * 100;
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', 50);
-            line.setAttribute('x2', 50);
-            line.setAttribute('y1', y1);
-            line.setAttribute('y2', y2);
-            line.setAttribute('stroke', frame < GAME.frame ? '#9eb27a' : '#6d5944');
-            line.setAttribute('stroke-width', '0.6');
-            line.setAttribute('stroke-dasharray', '1.4 1.8');
-            svg.appendChild(line);
-        }
-        GAME.routeMap.flat().forEach((node) => {
-            const pos = routeNodePosition(node);
-            if (pos.x === 50) return;
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', 50);
-            line.setAttribute('x2', pos.x);
-            line.setAttribute('y1', pos.y);
-            line.setAttribute('y2', pos.y);
-            line.setAttribute('stroke', node.frame <= GAME.frame ? '#9eb27a' : '#6d5944');
-            line.setAttribute('stroke-width', '0.35');
-            line.setAttribute('stroke-dasharray', '0.8 1.4');
-            svg.appendChild(line);
-        });
-        return;
-    }
-    for (let frame = 1; frame < GAME.maxFrames; frame++) {
-        const x1 = ((frame - 0.5) / GAME.maxFrames) * 100;
-        const x2 = ((frame + 0.5) / GAME.maxFrames) * 100;
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y1', 50);
-        line.setAttribute('y2', 50);
-        line.setAttribute('stroke', frame < GAME.frame ? '#9eb27a' : '#6d5944');
-        line.setAttribute('stroke-width', '0.5');
-        line.setAttribute('stroke-dasharray', '1.4 1.8');
-        svg.appendChild(line);
-    }
-    GAME.routeMap.flat().forEach((node) => {
-        const pos = routeNodePosition(node);
-        if (pos.y === 50) return;
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', pos.x);
-        line.setAttribute('x2', pos.x);
-        line.setAttribute('y1', 50);
-        line.setAttribute('y2', pos.y);
-        line.setAttribute('stroke', node.frame <= GAME.frame ? '#9eb27a' : '#6d5944');
-        line.setAttribute('stroke-width', '0.3');
-        line.setAttribute('stroke-dasharray', '0.8 1.4');
-        svg.appendChild(line);
+    document.querySelectorAll('.circuit-stop').forEach(card => {
+        const node = GAME.routeMap.flat().find(item => item.id === card.dataset.nodeId);
+        if (!node) return;
+        const pos = circuitNodePosition(node, portrait);
+        card.style.left = `${pos.x}%`;
+        card.style.top = `${pos.y}%`;
     });
+    svg.innerHTML = stageConnections(GAME.routeMap, displayedRouteStage).map(({ from, to }) => {
+        const a = circuitNodePosition(from, portrait), b = circuitNodePosition(to, portrait);
+        const cleared = GAME.completedNodes.includes(from.id) && GAME.completedNodes.includes(to.id);
+        const active = GAME.completedNodes.includes(from.id) && to.frame === nextFrame;
+        const path = portrait ? `M${a.x} ${a.y} C${a.x} ${(a.y+b.y)/2},${b.x} ${(a.y+b.y)/2},${b.x} ${b.y}` : `M${a.x} ${a.y} C${(a.x+b.x)/2} ${a.y},${(a.x+b.x)/2} ${b.y},${b.x} ${b.y}`;
+        return `<path d="${path}" class="circuit-link ${cleared ? 'is-cleared' : active ? 'is-active' : ''}" vector-effect="non-scaling-stroke"/>`;
+    }).join('');
 }
 
 function chooseRouteByNode(nodeId) {
@@ -7878,17 +7795,26 @@ function chooseRouteByNode(nodeId) {
 
 function showBossIntro(route) {
     GAME.state = 'BOSS_INTRO';
-    document.getElementById('boss-intro-title').innerText = route.name || 'Boss Lane';
-    document.getElementById('boss-intro-desc').innerText = route.desc || 'A strange lane bends the house rules.';
-    document.getElementById('boss-intro-rule').innerText = bossRuleText(route);
-    document.getElementById('boss-intro-screen').classList.remove('hidden');
-    showAlert('Boss lane ahead');
+    const theme = routeTheme(route);
+    const screen = document.getElementById('boss-intro-screen');
+    screen.style.setProperty('--boss-color', theme.color);
+    screen.style.setProperty('--boss-dark', theme.dark);
+    document.getElementById('boss-intro-sigil').innerHTML = bossEmblem(route);
+    document.getElementById('boss-intro-number').textContent = `HOUSE BOSS 0${GAME.stage}`;
+    document.getElementById('boss-intro-kicker').textContent = GAME.frame === GAME.maxFrames ? 'THE FINAL SHOWDOWN' : `STAGE 0${GAME.stage} / SHOWDOWN`;
+    document.getElementById('boss-intro-title').textContent = route.name || 'Boss Lane';
+    document.getElementById('boss-intro-motto').textContent = theme.title;
+    document.getElementById('boss-intro-desc').textContent = route.desc || 'A strange lane bends the house rules.';
+    document.getElementById('boss-intro-rule').innerHTML = `<div><b>${currentRackLayout().points.length}</b><span>PINS ON DECK</span></div><div><b>3</b><span>THROWS</span></div><p>${escapeHtml(bossRuleText(route))}</p>`;
+    screen.classList.remove('hidden');
+    sfx.playImplosion();
+    document.getElementById('btn-start-boss').focus({ preventScroll: true });
 }
 
 function bossRuleText(route) {
     const parts = [];
     if (route.targetMod) parts.push(`Target +${route.targetMod}`);
-    if (route.rollBonus) parts.push(`Bonus roll +${route.rollBonus}`);
+
     if (route.hookMod && route.hookMod !== 1) parts.push(`Hook ${Math.round(route.hookMod * 100)}%`);
     if (route.specialMod) parts.push(`Special pins ${Math.round(route.specialMod * 100)}%`);
     if (route.pinScoreMod && route.pinScoreMod !== 1) parts.push(`Pin value ${Math.round(route.pinScoreMod * 100)}%`);
@@ -8101,7 +8027,18 @@ function resetRun() {
     }
 }
 
+function updateBossHud() {
+    const hud = document.getElementById('boss-battle-hud');
+    hud.hidden = GAME.mode !== 'roguelike' || !GAME.currentRoute?.boss;
+    if (hud.hidden) return;
+    hud.style.setProperty('--boss-color', routeTheme(GAME.currentRoute).color);
+    document.getElementById('boss-hud-name').textContent = GAME.currentRoute.name;
+    document.getElementById('boss-hud-fill').style.width = `${Math.min(100, GAME.score / Math.max(1, GAME.targetScore) * 100)}%`;
+    document.getElementById('boss-hud-progress').textContent = `${uiNumber(GAME.score)} / ${uiNumber(GAME.targetScore)} TO BEAT THE HOUSE`;
+}
+
 function updateUI() {
+    updateBossHud();
     const scorePanel = document.getElementById('score-hud-panel');
     scorePanel.dataset.mode = GAME.mode;
     if (isTenPinMode()) {

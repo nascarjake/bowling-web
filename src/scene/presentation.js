@@ -1,3 +1,5 @@
+import { districtForStage, routeTheme } from '../ui/routeArt.js?v=20261019e';
+
 // Presentation for a single, continuously widening lane. Dimensions are in world
 // units: boards, trim, and light fixtures retain their scale as the rack grows.
 const T = window.THREE;
@@ -64,6 +66,8 @@ export function createLanePresentation(scene, renderer) {
     let surfaceY = 0;
     let laneWidth = 5;
     let laneCenter = 0;
+    let arenaTime = 0;
+    const animatedLights = [];
 
     // A prefiltered indoor environment gives lacquer and resin broad highlights.
     const studio = new T.Scene();
@@ -116,8 +120,15 @@ export function createLanePresentation(scene, renderer) {
     const burstLight = new T.PointLight(0xffa354, 0, 12, 2);
     scene.add(burstLight);
 
-    function rebuild({ width, length, origin, pins, frame, approachLength = 12, cameraBack = 9 }) {
+    function rebuild({ width, length, origin, pins, frame, approachLength = 12, cameraBack = 9, route = null, stage = 1 }) {
         disposeGroup(root);
+        animatedLights.length = 0;
+        const district = districtForStage(stage);
+        const identity = routeTheme(route || {});
+        const boss = Boolean(route?.boss);
+        const accentColor = boss ? identity.color : district.color;
+        const accentHex = new T.Color(accentColor).getHex();
+        const secondHex = new T.Color(district.secondary).getHex();
         laneWidth = width;
         laneCenter = origin.x;
         surfaceY = origin.y + 0.004;
@@ -136,16 +147,18 @@ export function createLanePresentation(scene, renderer) {
             material.color.convertSRGBToLinear();
             return material;
         };
-        const dark = standard(0x101e2b, 0.68, 0.08);
+        const dark = standard(0x0d1928, 0.58, 0.12);
         const brass = standard(0xc79b58, 0.28, 0.65);
-        const teal = new T.MeshBasicMaterial({ color: new T.Color(0x35d0bd).convertSRGBToLinear() });
-        const warm = new T.MeshBasicMaterial({ color: new T.Color(0xf4a45d).convertSRGBToLinear() });
+        const teal = new T.MeshBasicMaterial({ color: new T.Color(accentHex).convertSRGBToLinear() });
+        const warm = new T.MeshBasicMaterial({ color: new T.Color(secondHex).convertSRGBToLinear() });
+        const boxBatches = new Map();
         const box = (w, h, d, x, y, z, material) => {
-            const mesh = new T.Mesh(new T.BoxGeometry(w, h, d), material);
-            mesh.position.set(x + origin.x, y + origin.y, z);
-            mesh.receiveShadow = true;
-            root.add(mesh);
-            return mesh;
+            const transform = new T.Object3D();
+            transform.position.set(x + origin.x, y + origin.y, z);
+            transform.scale.set(w, h, d);
+            if (!boxBatches.has(material)) boxBatches.set(material, []);
+            boxBatches.get(material).push(transform);
+            return transform;
         };
         const repeat = (source, sectionWidth = width, sectionLength = length) => {
             const texture = source.clone();
@@ -155,7 +168,7 @@ export function createLanePresentation(scene, renderer) {
             texture.userData = { ownedByLane: true };
             return texture;
         };
-        const maple = new T.MeshPhysicalMaterial({ color: 0xffeed7, map: repeat(wood), roughnessMap: repeat(rough), roughness: 0.72, metalness: 0, clearcoat: 0.12, clearcoatRoughness: 0.42, envMapIntensity: 0.24 });
+        const maple = new T.MeshPhysicalMaterial({ color: 0xf2d9b8, map: repeat(wood), roughnessMap: repeat(rough), roughness: 0.5, metalness: 0, clearcoat: 0.32, clearcoatRoughness: 0.28, envMapIntensity: 0.28 });
         maple.color.convertSRGBToLinear();
         const surface = new T.Mesh(new T.PlaneGeometry(width, length), maple);
         surface.name = 'Maple lane / constant board scale';
@@ -169,7 +182,7 @@ export function createLanePresentation(scene, renderer) {
         // The approach is real wood and supported by the lane collider. The
         // carpet beyond it keeps the foreground inside the bowling venue.
         const approachMaple = new T.MeshPhysicalMaterial({
-            color: 0xe8bb87, map: repeat(wood, approachWidth, approachLength),
+            color: 0xceaf8b, map: repeat(wood, approachWidth, approachLength),
             roughnessMap: repeat(rough, approachWidth, approachLength),
             roughness: 0.8, clearcoat: 0.08, clearcoatRoughness: 0.55, envMapIntensity: 0.18
         });
@@ -207,16 +220,16 @@ export function createLanePresentation(scene, renderer) {
         const upholsterySeam = standard(0x241622, .9);
         const poster = canvasTexture(512, 768, (ctx, w, h) => {
             ctx.fillStyle = '#16121f'; ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = '#803d43';
+            ctx.fillStyle = boss ? identity.dark : district.dark;
             for (let i = -6; i < 12; i++) {
                 ctx.beginPath(); ctx.moveTo(i * 90, h); ctx.lineTo(i * 90 + 48, h);
                 ctx.lineTo(i * 90 + 480, 0); ctx.lineTo(i * 90 + 432, 0); ctx.fill();
             }
             ctx.fillStyle = '#16121f'; ctx.fillRect(22, 190, w - 44, 370);
-            ctx.fillStyle = '#e9c185'; ctx.textAlign = 'center';
-            ctx.font = '900 106px sans-serif'; ctx.fillText('BOWL', w / 2, 325); ctx.fillText('BOLD.', w / 2, 445);
-            ctx.font = '24px sans-serif'; ctx.fillText('P I N F A L L   S O C I A L', w / 2, 515);
-            ctx.strokeStyle = '#c29962'; ctx.lineWidth = 8; ctx.strokeRect(8, 8, w - 16, h - 16);
+            ctx.fillStyle = accentColor; ctx.textAlign = 'center';
+            ctx.font = '900 100px sans-serif'; ctx.fillText(boss ? 'HOUSE' : 'BOWL', w / 2, 325); ctx.fillText(boss ? 'BOSS.' : 'BOLD.', w / 2, 445);
+            ctx.font = '23px monospace'; ctx.fillText(boss ? 'T H E  S H O W D O W N' : district.name.toUpperCase(), w / 2, 515);
+            ctx.strokeStyle = accentColor; ctx.lineWidth = 6; ctx.strokeRect(8, 8, w - 16, h - 16);
         });
         poster.userData = { ownedByLane: true };
         const posterMaterial = new T.MeshBasicMaterial({ map: poster });
@@ -250,20 +263,52 @@ export function createLanePresentation(scene, renderer) {
         }
         root.add(slatMesh);
         const sign = canvasTexture(1536, 384, (ctx, w, h) => {
-            ctx.fillStyle = '#101d28'; ctx.fillRect(0, 0, w, h);
-            ctx.strokeStyle = '#ad8c53'; ctx.lineWidth = 3; ctx.strokeRect(14, 14, w - 28, h - 28);
+            ctx.fillStyle = '#0a1421'; ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = boss ? identity.dark : district.dark;
+            for (let i = -1; i < 20; i++) {
+                ctx.beginPath(); ctx.moveTo(i * 125, h); ctx.lineTo(i * 125 + 45, h);
+                ctx.lineTo(i * 125 + 280, 0); ctx.lineTo(i * 125 + 235, 0); ctx.fill();
+            }
+            ctx.fillStyle = '#0a1421'; ctx.fillRect(30, 38, w - 60, h - 76);
+            ctx.strokeStyle = accentColor; ctx.lineWidth = 3; ctx.strokeRect(14, 14, w - 28, h - 28);
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#79e7d8'; ctx.font = '500 25px sans-serif';
-            ctx.fillText('THE  E X P A N D I N G  ALLEY', w / 2, 73);
-            ctx.fillStyle = '#fff0d6'; ctx.font = '900 156px sans-serif';
-            ctx.fillText('P I N F A L L', w / 2, 236);
-            ctx.fillStyle = '#acbcc3'; ctx.font = '500 28px sans-serif';
-            ctx.fillText(`${String(pins).padStart(3, '0')} PINS     /     FRAME ${String(frame).padStart(2, '0')}     /     MAKE SOME NOISE`, w / 2, 316);
+            ctx.fillStyle = accentColor; ctx.font = '500 28px monospace';
+            ctx.fillText(boss ? 'H O U S E   B O S S  /  S H O W D O W N' : district.name.toUpperCase().split('').join(' '), w / 2, 86);
+            ctx.fillStyle = '#f4dfbd'; ctx.font = `900 ${boss ? 118 : 152}px sans-serif`;
+            ctx.fillText(boss ? route.name.toUpperCase() : 'P I N F A L L', w / 2, 239, w - 120);
+            ctx.fillStyle = accentColor; ctx.font = '500 27px monospace';
+            ctx.fillText(`${String(pins).padStart(3, '0')} PINS     /     FRAME ${String(frame).padStart(2, '0')}     /     ${boss ? identity.title : 'MAKE SOME NOISE'}`, w / 2, 309, w - 100);
         });
         sign.userData = { ownedByLane: true };
         const plaque = new T.Mesh(new T.PlaneGeometry(Math.min(roomWidth - 2, 15), 3.75), new T.MeshBasicMaterial({ map: sign }));
         plaque.position.set(origin.x, origin.y + 4.5, end - 2.1);
         root.add(plaque);
+
+        // Architectural light portals frame the pin action and repeat in the
+        // lacquer. Boss rings are entirely visual; the playable lane stays clear.
+        const portalCount = boss ? 3 : 2;
+        const portalWidth = width + 5;
+        for (let i = 0; i < portalCount; i++) {
+            const z = end + 1.8 + i * 5.3;
+            const portalHeight = 7.2 + i * .6;
+            for (const side of [-1, 1]) {
+                box(.26, portalHeight, .38, side * portalWidth / 2, portalHeight / 2 - .1, z, dark);
+                box(.045, portalHeight - .45, .045, side * (portalWidth / 2 - .16), portalHeight / 2, z + .21, teal);
+            }
+            box(portalWidth, .22, .38, 0, portalHeight - .1, z, dark);
+            box(portalWidth - .3, .045, .045, 0, portalHeight - .23, z + .21, teal);
+        }
+        if (boss) {
+            const halo = new T.Mesh(new T.TorusGeometry(3.45, .035, 5, 64), teal);
+            halo.position.set(origin.x, origin.y + 4.7, end - 2.26);
+            root.add(halo);
+            for (const side of [-1, 1]) {
+                for (let i = 0; i < 4; i++) {
+                    const slash = box(.1, 1.7, .06, side * (width / 2 + 1.8), 2.3 + i * .65, end - 1.9, warm);
+                    slash.rotation.z = -side * .65;
+                }
+            }
+        }
 
         // Large, warm overhead fixtures make glossy shapes readable without bloom haze.
         for (let i = 0; i < 5; i++) {
@@ -291,15 +336,19 @@ export function createLanePresentation(scene, renderer) {
             dot.position.set(origin.x + x, surfaceY + 0.013, start - 3.5);
             root.add(dot);
         }
-        for (const [z, color, strength] of [[start + 5, 0xffb76d, 1.1], [start - 5, 0xffb76d, 1.4], [origin.z, 0x3bccc1, 1.0], [end + 6, 0xffc289, 1.65]]) {
+        for (const [z, color, strength] of [[start + 5, 0xffbb80, .9], [start - 5, secondHex, 1.15], [origin.z, accentHex, 1.15], [end + 6, 0xffcf9b, 1.5]]) {
             const pool = new T.PointLight(color, strength, 24, 2);
             pool.color.convertSRGBToLinear();
             pool.position.set(origin.x, origin.y + 5.5, z);
             root.add(pool);
+            if (boss && z === end + 6) {
+                pool.color.lerp(new T.Color(accentHex).convertSRGBToLinear(), .3);
+                animatedLights.push({ light: pool, base: strength, phase: 0 });
+            }
         }
-        const hemisphere = new T.HemisphereLight(0x8199bb, 0x39291d, 0.24);
+        const hemisphere = new T.HemisphereLight(0x8199bb, 0x302326, 0.2);
         root.add(hemisphere);
-        const key = new T.DirectionalLight(0xffc990, 0.72);
+        const key = new T.DirectionalLight(0xffd9b0, 0.64);
         key.color.convertSRGBToLinear();
         key.position.set(origin.x - 5, origin.y + 12, start - 12);
         key.target.position.set(origin.x, origin.y, end + 10);
@@ -310,11 +359,36 @@ export function createLanePresentation(scene, renderer) {
         key.shadow.normalBias = 0.02;
         key.shadow.radius = 2;
         root.add(key, key.target);
-        const fill = new T.DirectionalLight(0x51c4d1, 0.24);
+        const fill = new T.DirectionalLight(accentHex, 0.3);
         fill.color.convertSRGBToLinear();
         fill.position.set(origin.x + 7, origin.y + 8, end);
         fill.target.position.set(origin.x, origin.y, origin.z);
         root.add(fill, fill.target);
+
+        // A few suspended motes catch the light; one draw call, no new shadows.
+        const dustPositions = new Float32Array(64 * 3);
+        for (let i = 0; i < 64; i++) {
+            dustPositions[i*3] = origin.x + Math.sin(i * 127.1) * (width / 2 + 3);
+            dustPositions[i*3+1] = origin.y + 2 + ((i * 37) % 59) / 10;
+            dustPositions[i*3+2] = start - ((i * 29) % 101) / 101 * length;
+        }
+        const dustGeometry = new T.BufferGeometry();
+        dustGeometry.setAttribute('position', new T.BufferAttribute(dustPositions, 3));
+        const dust = new T.Points(dustGeometry, new T.PointsMaterial({ color: accentHex, size: .025, transparent: true, opacity: .2, depthWrite: false, blending: T.AdditiveBlending }));
+        root.add(dust);
+
+        // Static architecture shares a draw call per material, including in the
+        // reflection pass. Wider racks add atmosphere without hundreds of draws.
+        for (const [material, transforms] of boxBatches) {
+            const batch = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), material, transforms.length);
+            transforms.forEach((transform, index) => {
+                transform.updateMatrix();
+                batch.setMatrixAt(index, transform.matrix);
+            });
+            batch.receiveShadow = true;
+            batch.frustumCulled = false;
+            root.add(batch);
+        }
     }
 
     function impact(position, color = 0xffba68) {
@@ -372,6 +446,8 @@ export function createLanePresentation(scene, renderer) {
             aim.children.forEach(dash => { dash.visible = Math.abs(position.x + Math.sin(angle) * -dash.position.z - laneCenter) < laneWidth / 2 - 0.08; });
         },
         update(dt) {
+            arenaTime += dt;
+            animatedLights.forEach(({ light, base, phase }) => { light.intensity = base * (1 + Math.sin(arenaTime * .9 + phase) * .07); });
             burstLight.intensity *= Math.exp(-12 * dt);
             for (let i = effects.length - 1; i >= 0; i--) {
                 const effect = effects[i];
