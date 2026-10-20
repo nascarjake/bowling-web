@@ -345,7 +345,7 @@ const BOWLING_PHYSICS = {
     launchPower: 9.6,
     skidPortion: 0.5,
     rollPortion: 0.82,
-    hookForce: 22,
+    hookForce: 68,
     rollStability: 0.72,
     idealEntryDeg: 6,
     flatAngleDeg: 2.8,
@@ -3932,8 +3932,8 @@ function setPreRollCamera() {
     }
     const origin = laneOrigin();
     const back = THREE.MathUtils.clamp(laneCameraDistance(LANE.currentWidth, camera.aspect, camera.fov) * 0.48, 7.8, 10);
-    camera.position.set(origin.x + launchX * 0.42, origin.y + 5.2 + back * 0.06, ballStartZ() + back);
-    cameraLookTarget.set(origin.x + launchX * 0.25, origin.y + 0.45, laneStartZ() - 7);
+    camera.position.set(origin.x + launchX * 0.42, origin.y + 2.8 + back * 0.04, ballStartZ() + back);
+    cameraLookTarget.set(origin.x + launchX * 0.25, origin.y + 0.7, laneStartZ() - 7);
     camera.lookAt(cameraLookTarget);
 }
 
@@ -4259,8 +4259,8 @@ class RetroGauge {
         const trueWindow = (isTenPinMode() ? this.trueWindow * 0.58 : this.trueWindow) + (GAME.activeUpgrades.timingForgiveness || 0) + (GAME.activeUpgrades.nextThrowFocus || 0);
         if (absError <= trueWindow) return 0;
         const normalized = (absError - trueWindow) / (this.gutterWindow - trueWindow);
-        const eased = Math.pow(THREE.MathUtils.clamp(normalized, 0, 1), 1.55);
-        return Math.sign(timingError) * eased * 0.34;
+        const eased = Math.pow(THREE.MathUtils.clamp(normalized, 0, 1), 1.1);
+        return Math.sign(timingError) * eased * 0.72;
     }
 
     draw() {
@@ -4858,11 +4858,11 @@ function bindInputs() {
     document.getElementById('btn-main-menu').addEventListener('click', () => returnToMainMenu());
     bindVolumeControls();
 
-    window.addEventListener('click', () => {
-        if (GAME.paused) return;
-        if (GAME.state === 'ROLL_SETTLING') {
-            finishRollReview();
-        }
+    window.addEventListener('click', (event) => {
+        if (GAME.paused || debugState.active) return;
+        if (!event.target.closest('#canvas-container, #game-hud')) return;
+        if (event.target.closest('button, input, select, textarea, a, [role="button"], #score-hud-panel')) return;
+        if (GAME.state === 'MAIN_METER' || GAME.state === 'ROLL_SETTLING') triggerLaunchClick();
     });
 }
 
@@ -6038,10 +6038,11 @@ function applyTimingHook(dt) {
     const skidPortion = THREE.MathUtils.clamp(BOWLING_PHYSICS.skidPortion + (activeThrowMods.hookDelay || 0), 0.35, 0.72);
     const hookMultiplier = Math.max(0.35, 1 + (activeThrowMods.hookBoost || 0));
     const phaseProgress = THREE.MathUtils.clamp((progress - skidPortion) / Math.max(0.001, BOWLING_PHYSICS.rollPortion - skidPortion), 0, 1);
-    const hookRamp = Math.sin(phaseProgress * Math.PI);
+    const hookRamp = phaseProgress * phaseProgress * (3 - 2 * phaseProgress);
+    const lateFade = 1 - 0.18 * THREE.MathUtils.smoothstep(progress, 0.86, 1);
     const laneCenterPull = THREE.MathUtils.clamp((ballBody.position.x - origin.x) / Math.max(1, LANE.currentWidth / 2), -1, 1);
     const route = GAME.currentRoute || ROUTE_TYPES.STANDARD;
-    const hookForce = (activeHook * BOWLING_PHYSICS.hookForce * hookMultiplier * (route.hookMod || 1) * hookRamp) - (laneCenterPull * Math.abs(activeHook) * 3.2 * hookRamp);
+    const hookForce = (activeHook * BOWLING_PHYSICS.hookForce * hookMultiplier * (route.hookMod || 1) * hookRamp * lateFade) - (laneCenterPull * Math.abs(activeHook) * 3.2 * hookRamp);
     ballBody.applyForce(new CANNON.Vec3(hookForce, 0, 0), ballBody.position);
     if (progress > BOWLING_PHYSICS.rollPortion) {
         const stability = THREE.MathUtils.clamp(BOWLING_PHYSICS.rollStability + (activeThrowMods.stability || 0), 0.45, 0.94);
@@ -8375,7 +8376,7 @@ function updateFollowCamera(visualBallPos, dt) {
     if (follow <= 0) return;
     const rack = currentRackLayout();
     const rackFront = laneEndZ() + 3.5 + pinRackOffset().z + rack.depth;
-    const chaseBack = THREE.MathUtils.clamp(laneCameraDistance(LANE.currentWidth, camera.aspect, camera.fov) * 0.4, 6.3, 9);
+    const chaseBack = THREE.MathUtils.clamp(laneCameraDistance(LANE.currentWidth, camera.aspect, camera.fov) * 0.3, 5.2, 7.2);
     let desiredPosition;
     let desiredLook;
     let response = 5.6;
@@ -8388,7 +8389,7 @@ function updateFollowCamera(visualBallPos, dt) {
         const impactBack = THREE.MathUtils.clamp(chaseBack + 5, 11, 16);
         desiredPosition = new THREE.Vector3(
             THREE.MathUtils.lerp(deck.centerX, impactCamera.anchor.x, 0.35) + impactCamera.side * orbit,
-            origin.y + 4.8 + Math.min(1.5, LANE.currentWidth * 0.08) + sweep * 0.25,
+            origin.y + 6.2 + Math.min(2, LANE.currentWidth * 0.08) + sweep * 0.4,
             rackFront + impactBack - sweep * 1.5
         );
         desiredLook = new THREE.Vector3(
@@ -8406,13 +8407,13 @@ function updateFollowCamera(visualBallPos, dt) {
         const bank = Math.sin(progress * Math.PI) * 0.35 * (Math.sign(visualBallPos.x - origin.x) || Math.sign(activeHook) || 1);
         desiredPosition = new THREE.Vector3(
             origin.x + (visualBallPos.x - origin.x) * 0.78 + bank,
-            origin.y + 3.65 + chaseBack * 0.16 - rush * 0.45,
+            origin.y + 1.5 + chaseBack * 0.07 - rush * 0.15,
             visualBallPos.z + back
         );
         desiredLook = new THREE.Vector3(
             visualBallPos.x,
-            origin.y + 0.5,
-            visualBallPos.z - 4.6 + rush * 1.35
+            origin.y + 0.65,
+            visualBallPos.z - 3.8 + rush * 0.9
         );
     }
 
