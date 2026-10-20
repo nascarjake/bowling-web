@@ -416,6 +416,7 @@ function initEngine() {
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, rendererPixelRatioCap()));
         renderer.setSize(window.innerWidth, window.innerHeight);
         updateControlLabels();
+        if (GAME.mode === 'tenpin' || GAME.mode === 'roguelike') updateUI();
         if (GAME.state === 'MAIN_METER') setPreRollCamera();
         if (GAME.state === 'ROUTE') drawRouteMapLines();
     });
@@ -436,7 +437,7 @@ function finishLoadingScreen() {
     const startButton = document.getElementById('btn-start-game');
     startButton.disabled = false;
     startButton.classList.remove('pixel-btn-disabled');
-    startButton.innerText = 'Open Roguelike';
+    startButton.innerText = 'Play Roguelike Run';
     const tenPinButton = document.getElementById('btn-start-tenpin');
     tenPinButton.disabled = false;
     tenPinButton.classList.remove('pixel-btn-disabled');
@@ -4811,6 +4812,12 @@ function bindInputs() {
     document.getElementById('score-hud-panel').addEventListener('click', () => {
         if (isTenPinMode()) showTenPinScoreboard();
     });
+    document.getElementById('score-hud-panel').addEventListener('keydown', (event) => {
+        if (!isTenPinMode() || !['Enter', 'Space'].includes(event.code) || event.repeat) return;
+        event.preventDefault();
+        event.stopPropagation();
+        showTenPinScoreboard();
+    });
     document.getElementById('btn-close-scoreboard').addEventListener('click', hideTenPinScoreboard);
     document.getElementById('btn-tenpin-reroll-shop').addEventListener('click', () => {
         if (!isTenPinMode() || GAME.tenPin.fullBag) return;
@@ -5831,9 +5838,9 @@ function loadRunFromSlot(index) {
     GAME.paused = false;
     activeHook = 0;
     Object.assign(GAME, {
-        frame: slot.frame || 1,
-        stage: slot.stage || stageForFrame(slot.frame || 1),
-        frameInStage: slot.frameInStage || frameInStage(slot.frame || 1),
+        frame: slot.frame ?? 0,
+        stage: slot.stage ?? stageForFrame(slot.frame ?? 1),
+        frameInStage: slot.frameInStage ?? (slot.frame ? frameInStage(slot.frame) : 0),
         score: slot.score || 0,
         targetScore: slot.targetScore || 8,
         rollsLeft: slot.rollsLeft || 2,
@@ -5860,12 +5867,21 @@ function loadRunFromSlot(index) {
     document.getElementById('pause-screen').classList.add('hidden');
     document.getElementById('shop-screen').classList.add('hidden');
     document.getElementById('game-over-screen').classList.add('hidden');
-    if (GAME.state === 'SHOP' && GAME.shopSelection.length) {
+    if (GAME.state === 'SHOP') {
         triggerShopTransition();
-    } else if (!GAME.currentRoute || GAME.frame <= 0) {
+    } else if (GAME.state === 'EVENT' && GAME.currentRoute?.event) {
+        showEventScreen(GAME.currentRoute);
+    } else if (GAME.state === 'BOSS_INTRO' && GAME.currentRoute?.boss) {
+        showBossIntro(GAME.currentRoute);
+    } else if (GAME.state === 'ROUTE' && !GAME.shopSelection.length && GAME.currentRoute?.nodeId && GAME.completedNodes.includes(GAME.currentRoute.nodeId)) {
+        // Older saves recorded the route before entering its lane.
+        startFrame();
+        autoSaveRunSlot();
+    } else if (GAME.state === 'ROUTE' || !GAME.currentRoute || GAME.frame <= 0) {
         showRouteMap();
     } else {
         startFrame();
+        autoSaveRunSlot();
     }
 }
 
@@ -7007,6 +7023,7 @@ function showTenPinShop(frameNumber) {
     document.querySelector('#shop-screen h2').innerText = `FRAME ${frameNumber} RACK SHOP`;
     document.querySelector('#shop-screen p').innerText = GAME.tenPin.fullBag ? 'Full bag: every item is available.' : 'Limited bag: 6 random items are available. Rerolling is allowed.';
     document.getElementById('shop-next-goal-row').classList.add('hidden');
+    document.getElementById('btn-next-frame').innerText = `Start Frame ${frameNumber}`;
     document.getElementById('btn-shop-reroll').classList.add('hidden');
     document.getElementById('btn-tenpin-reroll-shop').classList.toggle('hidden', GAME.tenPin.fullBag);
     document.getElementById('shop-cash-display').innerText = uiNumber(GAME.cash);
@@ -7352,11 +7369,12 @@ function triggerShopTransition() {
     document.getElementById('btn-tenpin-reroll-shop').classList.add('hidden');
     document.getElementById('btn-shop-reroll').classList.remove('hidden');
     document.querySelector('#shop-screen h2').innerText = 'FRAME CLEARED!';
-    document.querySelector('#shop-screen p').innerText = 'Upgrade your setup before the next Frame challenge starts!';
+    document.querySelector('#shop-screen p').innerText = 'Shop or continue to the route map for your next lane.';
     document.getElementById('shop-next-goal-row').classList.remove('hidden');
 
     const nextFrame = Math.min(GAME.maxFrames, GAME.frame + 1);
     document.getElementById('shop-next-target').innerText = GAME.frame >= GAME.maxFrames ? 'Run Complete' : `Choose route to Frame ${nextFrame}`;
+    document.getElementById('btn-next-frame').innerText = 'Return to Route Map';
     document.getElementById('shop-cash-display').innerText = uiNumber(GAME.cash);
     document.getElementById('shop-cash-display').title = `Exact: ${uiExactNumber(GAME.cash)}`;
     renderShopRerollButton();
@@ -7859,7 +7877,6 @@ function chooseRouteByNode(nodeId) {
     GAME.frameInStage = frameInStage(GAME.frame);
     GAME.completedNodes.push(node.id);
     document.getElementById('route-screen').classList.add('hidden');
-    autoSaveRunSlot();
     sfx.playCoin();
     if (route.event) {
         showEventScreen(route);
@@ -7868,6 +7885,7 @@ function chooseRouteByNode(nodeId) {
     } else {
         startFrame();
     }
+    autoSaveRunSlot();
 }
 
 function showBossIntro(route) {
@@ -7962,6 +7980,8 @@ function startFrame() {
 
     buildPhysicalLane(requestedPhysicsLaneWidth(GAME.frame));
     generatePinGrid(GAME.frame);
+    // A perfect rack must always clear a round, even when a route raises its target.
+    GAME.targetScore = Math.min(GAME.targetScore, physicalPins.reduce((total, pin) => total + pinScoreValue(pin), 0));
     triggerRackLoadedSweep();
     const bumperGuardsActive = GAME.activeUpgrades.gutterGuards;
     toggleGutterGuards(bumperGuardsActive);
@@ -8094,6 +8114,17 @@ function resetRun() {
 }
 
 function updateUI() {
+    const scorePanel = document.getElementById('score-hud-panel');
+    scorePanel.dataset.mode = GAME.mode;
+    if (isTenPinMode()) {
+        scorePanel.setAttribute('aria-label', 'Open full ten-pin scorecard');
+        scorePanel.setAttribute('role', 'button');
+        scorePanel.tabIndex = 0;
+    } else {
+        scorePanel.removeAttribute('aria-label');
+        scorePanel.removeAttribute('role');
+        scorePanel.removeAttribute('tabindex');
+    }
     if (isTenPinMode()) {
         updateTenPinUI();
         return;

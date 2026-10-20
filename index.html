@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="./styles/base.css">
     <link rel="stylesheet" href="./styles/ui.css">
     <link rel="stylesheet" href="./styles/debug.css">
-    <link rel="stylesheet" href="./styles/presentation.css?v=20261019b">
+    <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -252,7 +252,7 @@
                             <div class="mode-card-icon mode-card-icon-route" aria-hidden="true"><svg viewBox="0 0 96 96"><path d="M22 68h18l16-40h18"/><circle cx="22" cy="68" r="8"/><circle cx="40" cy="68" r="8"/><circle cx="56" cy="28" r="8"/><circle cx="74" cy="28" r="8"/></svg></div>
                             <div><h3>Rogue-like Run</h3><p>Routes, shops, special pins, boss lanes.</p></div>
                         </div>
-                        <button id="btn-practice-lane" class="practice-menu-button"><span>PLAY THE LANE</span><small>Free play · 10 to 120 pins</small></button>
+                        <button id="btn-practice-lane" class="practice-menu-button" hidden><span>PLAY THE LANE</span><small>Free play · 10 to 120 pins</small></button>
                     <button id="btn-start-game" disabled class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-emerald-600 border-emerald-400 hover:bg-emerald-500 uppercase">Loading...</button>
                         <div id="run-slots" class="run-slots" aria-label="Saved roguelike runs"></div>
                     </article>
@@ -260,7 +260,7 @@
                         <div class="mode-card-topline">Classic Lane</div>
                         <div class="mode-card-main">
                             <div class="mode-card-icon mode-card-icon-score" aria-hidden="true"><svg viewBox="0 0 96 96"><rect x="18" y="22" width="60" height="52"/><path d="M18 40h60M38 22v52M58 22v52"/><path d="M28 32h6M48 32h6M68 32h6M28 54h6M48 54h6M68 54h6"/></svg></div>
-                            <div><h3>10-Pin Mode</h3><p>Classic scoring with optional shop twists.</p></div>
+                            <div><h3>10-Pin Mode</h3><p>Ten scored frames on one lane. Tap the scorecard for the full game.</p></div>
                         </div>
                         <div class="mode-card-options">
                             <label><input id="tenpin-special-toggle" type="checkbox" checked class="accent-yellow-500"> Special shop</label>
@@ -615,6 +615,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019b"></script>
+    <script type="module" src="./src/main.js?v=20261019c"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-import { bootGame } from './game/app.js?v=20261019b';
+import { bootGame } from './game/app.js?v=20261019c';
 
 const studioSplash = document.getElementById('studio-splash');
 const splashDuration = 2200;
