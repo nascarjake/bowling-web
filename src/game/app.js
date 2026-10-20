@@ -13,7 +13,10 @@ import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './la
 import { createLanePresentation } from '../scene/presentation.js?v=20261019f';
 import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019f';
 
-import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=20261019g';
+import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=20261019h';
+import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=20261019h';
+let eventRewardTimer = null;
+let debugEventIndex = 0;
 
 let shopCatalogFilter = 'all';
 let shopInspectorReturnFocus = null;
@@ -4552,6 +4555,16 @@ function updateGameplayHud() {
 }
 
 function bindInputs() {
+    const tutorial = document.querySelector('.tutorial-grid');
+    const lessons = [
+        ['01 / PICK A LANE', 'steer_ball', 'Twelve frames. Choose a route, then make it yours.'],
+        ['02 / BEAT THE TARGET', 'gold_pins', 'Reach the pin target before your throws run out.'],
+        ['03 / BUILD YOUR BALL', 'heavy_ball', 'Buy gear between frames. Reroll for fresh stock.'],
+        ['04 / FACE THE HOUSE', 'trophy', 'Bosses wait on frames 4, 8, and 12. Read their rules.'],
+        ['05 / PACK A KEEPSAKE', 'practice_frame', 'Pick one relic before the run for a special edge.'],
+        ['06 / COME BACK FOR MORE', 'record', 'Choose a save slot. The circuit saves your progress.']
+    ];
+    if (tutorial) tutorial.innerHTML = lessons.map(([title, art, line]) => `<article><span class="tutorial-art">${cabinetArt(art)}</span><b>${title}</b><p>${line}</p></article>`).join('');
     document.getElementById('btn-close-shop-inspect').addEventListener('click', () => closeShopInspector());
     document.getElementById('shop-inspect-screen').addEventListener('click', event => {
         if (event.target.id === 'shop-inspect-screen') closeShopInspector();
@@ -4619,6 +4632,7 @@ function bindInputs() {
         if (GAME.paused) return;
         if (e.code === 'Space') {
             if (e.target.closest?.('input, select, textarea, [contenteditable="true"]')) return;
+            if (e.target.closest?.('button, [role="button"], summary') && !e.target.closest('#game-hud')) return;
             e.preventDefault();
             if (e.repeat) return;
             triggerLaunchClick();
@@ -4969,6 +4983,7 @@ function togglePause(forceState = null) {
     GAME.paused = forceState === null ? !GAME.paused : forceState;
     document.getElementById('pause-screen').classList.toggle('hidden', !GAME.paused);
     if (GAME.paused) {
+        document.querySelector('#pause-screen .save-slots').hidden = isTenPinMode();
         GAME.pauseBlockedState = GAME.state;
         sfx.stopBallRoll();
         autoSaveRunSlot();
@@ -4986,6 +5001,17 @@ function toggleDebugActions(forceState = null) {
 
 function runDebugAction(action) {
     toggleDebugActions(false);
+    if (action === 'eventGallery') {
+        for (const id of ['main-menu', 'roguelike-run-screen', 'legend-screen', 'pause-screen', 'game-over-screen']) document.getElementById(id).classList.add('hidden');
+        startNewRun();
+        GAME.frame = 5;
+        GAME.cash = 18;
+        const event = EVENT_TYPES[debugEventIndex++ % EVENT_TYPES.length];
+        GAME.currentRoute = { id: `event_${event.id}`, name: event.name, event: true, eventId: event.id };
+        showEventScreen(GAME.currentRoute);
+        updateUI();
+        return;
+    }
     if (action === 'pocketShot') {
         if (GAME.state !== 'MAIN_METER' || !ballBody) return;
         gauge.selectedPower = 0.9;
@@ -5457,7 +5483,7 @@ function showDailyOverview() {
                 <span class="menu-detail-kicker">Today's Daily Run</span>
                 <h2>${escapeHtml(daily.title)}</h2>
             </div>
-            <p>One fixed challenge seed for today: the same route flavor, featured shops, event pins, and scoring modifiers every attempt.</p>
+            <p>Today's seed. The same strange circuit on every attempt.</p>
             <div class="daily-overview-list">
                 ${featured.map(item => `<span><i class="fa-solid ${escapeHtml(item.icon)}"></i> ${escapeHtml(item.name)}</span>`).join('')}
             </div>
@@ -5670,13 +5696,14 @@ function showHowToPlayInCenter(index = howToStepIndex) {
 }
 
 function relicCardsMarkup(profile = loadProfile()) {
-    return RELICS.map(relic => `
-        <button type="button" class="relic-card ${profile.selectedRelic === relic.id ? 'selected' : ''}" data-relic-id="${escapeHtml(relic.id)}">
-            <span class="relic-icon"><i class="fa-solid ${escapeHtml(relic.icon)}"></i></span>
-            <b>${escapeHtml(relic.name)}</b>
-            <p>${escapeHtml(relic.desc)}</p>
-        </button>
-    `).join('');
+    return RELICS.map(relic => {
+        const visual = RELIC_VISUALS[relic.id];
+        const selected = profile.selectedRelic === relic.id;
+        return `<button type="button" class="relic-card ${selected ? 'selected' : ''}" data-relic-id="${escapeHtml(relic.id)}" aria-pressed="${selected}" aria-label="${escapeHtml(relic.name + ': ' + relic.desc)}">
+            <span class="relic-card-status">${selected ? '✓ EQUIPPED' : 'SELECT KEEPSAKE'}</span><span class="relic-art">${cabinetArt(visual.art)}</span><b>${escapeHtml(relic.name)}</b>
+            <span class="relic-payoff"><strong>${visual.value}</strong><span>${visual.label}</span></span><p>${visual.desc}</p><small>${visual.duration}</small>
+        </button>`;
+    }).join('');
 }
 
 function bindRelicCardClicks(container) {
@@ -5707,22 +5734,18 @@ function showMenuRelicsInCenter() {
 }
 
 function statsCardsMarkup(profile = loadProfile()) {
-    const runs = profile.runs || [];
-    const tenPinGames = profile.tenPinGames || [];
-    const dailyRuns = dailyHistory(profile);
-    const avgRun = runs.length ? Math.round(runs.reduce((sum, run) => sum + (run.score || 0), 0) / runs.length) : 0;
-    const avgTen = tenPinGames.length ? Math.round(tenPinGames.reduce((sum, game) => sum + (game.score || 0), 0) / tenPinGames.length) : 0;
-    const bestDaily = dailyRuns.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
-    const recentRuns = runs.slice(0, 4).map(run => `${run.victory ? 'WIN' : 'LOSS'} F${run.frames} ${uiNumber(run.score)}`).join('<br>') || 'No runs yet';
-    const recentTen = tenPinGames.slice(0, 4).map(game => `${uiNumber(game.score)} pins`).join('<br>') || 'No 10-pin games yet';
-    return `
-        <article class="stat-card"><b>Roguelike Runs</b><p>${runs.length} played<br>${profile.wins || 0} wins<br>Average ${uiNumber(avgRun)}<br>Best ${uiNumber(profile.bestRunScore || 0)}</p></article>
-        <article class="stat-card"><b>10-Pin Games</b><p>${tenPinGames.length} played<br>Average ${uiNumber(avgTen)}<br>Best ${uiNumber(profile.bestTenPin || 0)}</p></article>
-        <article class="stat-card"><b>Daily Runs</b><p>${dailyRuns.length} attempts<br>Today ${todayDailyEntries(profile).length} tries<br>Best ${bestDaily ? `${uiNumber(bestDaily.score)}<br>${escapeHtml(bestDaily.seed)}` : 'None yet'}</p></article>
-        <article class="stat-card"><b>Bosses Beaten</b><p>${Object.keys(profile.bossesBeaten || {}).length || 0} variants<br>${Object.keys(profile.bossesBeaten || {}).map(escapeHtml).join('<br>') || 'None yet'}</p></article>
-        <article class="stat-card"><b>Recent Runs</b><p>${recentRuns}</p></article>
-        <article class="stat-card"><b>Recent 10-Pin</b><p>${recentTen}</p></article>
-    `;
+    const runs = profile.runs || [], games = profile.tenPinGames || [], dailies = dailyHistory(profile);
+    const average = records => records.length ? Math.round(records.reduce((sum, entry) => sum + (entry.score || 0), 0) / records.length) : 0;
+    const bestDaily = [...dailies].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+    const records = [
+        { art: 'trophy', title: 'CIRCUIT BEST', value: profile.bestRunScore || 0, line: `${runs.length} RUNS · ${profile.wins || 0} WINS · AVG ${uiNumber(average(runs))}` },
+        { art: 'record', title: '10-PIN BEST', value: profile.bestTenPin || 0, line: `${games.length} GAMES · AVG ${uiNumber(average(games))}` },
+        { art: 'practice_frame', title: 'DAILY BEST', value: bestDaily?.score || 0, line: `${dailies.length} ATTEMPTS · ${todayDailyEntries(profile).length} TODAY` },
+        { art: 'trophy', title: 'BOSS COLLECTION', value: Object.keys(profile.bossesBeaten || {}).length, line: 'HOUSE BOSS VARIANTS DEFEATED' }
+    ];
+    return records.map(record => `<article class="stat-card record-card"><span class="record-art">${cabinetArt(record.art)}</span><b>${record.title}</b><strong>${uiNumber(record.value)}</strong><p>${record.line}</p>${record.title === 'BOSS COLLECTION' ? `<span class="record-medals">${Object.keys(profile.bossesBeaten || {}).map(name => { const boss = Object.values(BOSS_VARIANTS).flat().find(boss => boss.name === name); return boss ? `<span role="img" aria-label="${escapeHtml(name)} defeated" title="${escapeHtml(name)}">${bossEmblem(boss)}</span>` : ''; }).join('')}</span>` : ''}</article>`).join('') +
+        `<article class="stat-card recent-records"><b>LAST CIRCUIT RUNS</b>${runs.slice(0, 4).map(run => `<div><span>${run.victory ? '★ CLEAR' : `FRAME ${run.frames}`}</span><strong>${uiNumber(run.score)}</strong></div>`).join('') || '<p>YOUR FIRST RUN STARTS THE STORY.</p>'}</article>` +
+        `<article class="stat-card recent-records"><b>LAST 10-PIN GAMES</b>${games.slice(0, 4).map((game, index) => `<div><span>GAME ${games.length - index}</span><strong>${uiNumber(game.score)}</strong></div>`).join('') || '<p>THE PERFECT 300 IS WAITING.</p>'}</article>`;
 }
 
 function showMenuStatsInCenter() {
@@ -5798,12 +5821,10 @@ function renderRunSlots() {
     const markup = slots.map((slot, index) => {
         if (!slot) {
             const mobileClass = index === firstEmptyIndex ? 'mobile-primary-empty' : 'mobile-extra-empty';
-            return `<button class="run-slot empty ${mobileClass}" type="button" data-start-slot="${index}"><b>Start Slot ${index + 1}</b>Empty run slot - autosaves here</button>`;
+            return `<button class="run-slot empty ${mobileClass}" type="button" data-start-slot="${index}"><span class="slot-number">0${index + 1}</span><span class="slot-copy"><b>NEW RUN</b><small>EMPTY SAVE SLOT</small></span><span class="slot-arrow" aria-hidden="true">+</span></button>`;
         }
-        const relic = RELICS.find(item => item.id === slot.selectedRelic);
-        const daily = slot.runModifiers?.daily?.enabled ? ' - Daily' : '';
-        const seed = slot.runModifiers?.daily?.seed || slot.runSeed;
-        return `<button class="run-slot" type="button" data-load-slot="${index}"><b>Continue Slot ${index + 1}${daily}</b>Frame ${slot.frame || 1} / ${slot.maxFrames || 12} - ${uiNumber(slot.cumulativeScore || 0)} score${relic ? ` - ${escapeHtml(relic.name)}` : ''}${seed ? ` - Seed ${escapeHtml(seed)}` : ''}</button>`;
+        const seed = slot.runModifiers?.daily?.seed || slot.runSeed || '';
+        return `<button class="run-slot" type="button" data-load-slot="${index}" title="${escapeHtml(seed)}"><span class="slot-number">0${index + 1}</span><span class="slot-copy"><b>${slot.runModifiers?.daily?.enabled ? 'DAILY RUN' : 'CONTINUE RUN'}</b><small>FRAME ${slot.frame || 1} / ${slot.maxFrames || 12} · ${uiNumber(slot.cumulativeScore || 0)} PTS</small><span class="slot-progress" aria-hidden="true"><i style="width:${Math.min(100, (slot.frame || 1) / (slot.maxFrames || 12) * 100)}%"></i></span></span><span class="slot-arrow" aria-hidden="true">↗</span></button>`;
     }).join('');
     ['run-slots', 'run-slots-hub'].forEach((id) => {
         const container = document.getElementById(id);
@@ -5825,6 +5846,8 @@ function renderSelectedRelicSummary() {
     const desc = document.getElementById('selected-relic-desc');
     if (label) label.innerText = relic.name;
     if (desc) desc.innerText = relic.desc;
+    const art = document.getElementById('selected-relic-art');
+    if (art) art.innerHTML = cabinetArt(RELIC_VISUALS[relic.id].art);
 }
 
 function snapshotRun() {
@@ -7339,17 +7362,14 @@ function renderLegend() {
     const tabContainer = document.getElementById('legend-tabs');
     const grid = document.getElementById('legend-grid');
     tabContainer.innerHTML = tabs.map(([id, label]) => `<button class="legend-tab ${id === legendActiveTab ? 'active' : ''}" data-legend-tab="${id}">${label}</button>`).join('');
-    grid.innerHTML = legendEntriesFor(legendActiveTab).map((entry) => {
-        if (!entry.seen && legendActiveTab !== 'tenpin') {
-            return `<div class="legend-card legend-unknown"><span class="legend-unknown-text">${animateTextChars('????????')}</span></div>`;
-        }
-        return `
-            <article class="legend-card">
-                <span class="legend-meta">${escapeHtml(entry.meta || '')}</span>
-                <h3>${escapeHtml(entry.title)}</h3>
-                <p>${renderVocabularyText(entry.desc || '')}</p>
-            </article>
-        `;
+    grid.innerHTML = legendEntriesFor(legendActiveTab).map(entry => {
+        if (!entry.seen && legendActiveTab !== 'tenpin') return `<article class="legend-card legend-unknown"><div class="field-guide-art">${cabinetArt('locked', '#9272bc')}</div><b>UNDISCOVERED</b><p>Find it out on the circuit.</p></article>`;
+        const item = [...SHOP_UPGRADES, ...TENPIN_SHOP_ITEMS].find(item => item.id === entry.id);
+        const boss = Object.values(BOSS_VARIANTS).flat().find(item => item.id === entry.id);
+        const event = EVENT_TYPES.find(item => item.id === entry.id);
+        const art = legendActiveTab === 'pins' ? shopPinArt(entry.id.toLowerCase()) : boss ? bossEmblem(boss) : event ? eventSceneArt(event.id) : item ? shopArtwork(item) : cabinetArt('record');
+        const summary = item ? `${shopVisual(item).value} ${shopVisual(item).label}` : boss ? 'HOUSE BOSS' : event ? eventVisual(event.id).tag : entry.meta;
+        return `<article class="legend-card"><div class="field-guide-art">${art}</div><span class="legend-meta">${escapeHtml(summary || '')}</span><h3>${escapeHtml(entry.title)}</h3><details><summary>FULL HOUSE RULES <span>+</span></summary><p>${renderVocabularyText(entry.desc || '')}</p></details></article>`;
     }).join('');
 }
 
@@ -7904,32 +7924,47 @@ function bossRuleText(route) {
 
 function showEventScreen(route) {
     const event = EVENT_TYPES.find(item => item.id === route.eventId) || EVENT_TYPES[0];
+    const theme = eventVisual(event.id);
     rememberLegendSeen('events', event.id);
     GAME.state = 'EVENT';
-    document.getElementById('event-screen').classList.remove('hidden');
-    document.getElementById('event-title').innerText = event.name;
-    document.getElementById('event-desc').innerHTML = renderVocabularyText(event.desc);
+    const screen = document.getElementById('event-screen');
+    for (const id of ['route-screen', 'shop-screen', 'boss-intro-screen']) document.getElementById(id).classList.add('hidden');
+    screen.style.setProperty('--event-color', theme.color);
+    screen.classList.remove('hidden');
+    document.getElementById('event-title').textContent = event.name;
+    document.getElementById('event-kicker').textContent = theme.tag;
+    document.getElementById('event-desc').textContent = theme.line;
+    document.getElementById('event-art').innerHTML = eventSceneArt(event.id);
+    document.getElementById('event-frame').textContent = `FRAME ${String(GAME.frame).padStart(2, '0')}`;
+    document.getElementById('event-cash').textContent = `$${uiNumber(GAME.cash)} PIN DOLLARS`;
     const options = document.getElementById('event-options');
-    options.innerHTML = '';
-    event.choices.forEach((choice, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'event-choice';
-        button.innerHTML = `<strong>${escapeHtml(choice.title)}</strong><span>${renderVocabularyText(choice.desc)}</span>`;
-        button.addEventListener('click', () => resolveEventChoice(event, choice, index));
-        options.appendChild(button);
-    });
+    options.innerHTML = event.choices.map((choice, index) => {
+        const visual = eventChoiceVisual(event.id, index, { cash: GAME.cash, targetTax: GAME.activeUpgrades.targetTax });
+        return `<button type="button" class="encounter-choice" data-event-choice="${index}" aria-label="${escapeHtml(choice.title + ': ' + choice.desc)}">
+            <span class="encounter-choice-top"><b>0${index + 1}</b><span>${visual.gains[0].duration}</span></span>
+            <span class="encounter-choice-art">${cabinetArt(visual.art, theme.color)}</span>
+            <span class="encounter-choice-copy"><strong>${escapeHtml(choice.title)}</strong><span class="encounter-rewards">${visual.gains.map(gain => `<span class="encounter-reward"><b>${gain.value}</b><span>${gain.label}<small>${gain.duration}</small></span></span>`).join('')}</span>
+            <span class="encounter-note">${visual.note}</span></span>
+            <span class="encounter-trade ${visual.trade ? 'has-cost' : ''}">${visual.trade ? `<span>THE CATCH</span> ${visual.trade}` : '<span>ON THE HOUSE</span> NO CASH COST'}</span>
+            <span class="encounter-take">${index ? 'TAKE THIS EDGE' : 'MAKE IT HAPPEN'}<b aria-hidden="true">↗</b></span>
+        </button>`;
+    }).join('');
+    options.querySelectorAll('[data-event-choice]').forEach(button => button.addEventListener('click', () => resolveEventChoice(event, event.choices[Number(button.dataset.eventChoice)])));
+    screen.querySelector('.event-cabinet').scrollTop = 0;
 }
 
 function resolveEventChoice(event, choice) {
-    const beforeCash = GAME.cash;
+    if (GAME.state !== 'EVENT' || !event.choices.includes(choice)) return;
+    const visual = eventChoiceVisual(event.id, event.choices.indexOf(choice), { cash: GAME.cash, targetTax: GAME.activeUpgrades.targetTax });
     choice.apply();
-    const cashDelta = GAME.cash - beforeCash;
-    if (cashDelta) showGainFloat(cashDelta, event.name);
     sfx.playCoin();
     document.getElementById('event-screen').classList.add('hidden');
-    showAlert(`${event.name}: ${choice.title}`);
     triggerShopTransition();
+    const receipt = document.getElementById('event-reward-toast');
+    clearTimeout(eventRewardTimer);
+    receipt.innerHTML = `${cabinetArt(visual.art, eventVisual(event.id).color)}<div><span>DEAL TAKEN / ${escapeHtml(choice.title)}</span><b>${visual.gains.map(gain => `${gain.value} ${gain.label}`).join(' · ')}</b>${visual.trade ? `<small>${visual.trade}</small>` : ''}</div><strong>✓</strong>`;
+    receipt.hidden = false;
+    eventRewardTimer = setTimeout(() => { receipt.hidden = true; }, 3400);
 }
 
 window.purchaseUpgrade = function(itemId) {
@@ -8003,8 +8038,10 @@ function endRun(victory = false) {
     GAME.saveSlot = null;
     document.getElementById('game-over-screen').classList.remove('hidden');
     document.querySelector('#game-over-screen h2').innerText = victory ? 'RUN COMPLETE' : 'GAME OVER';
-    const dailyText = GAME.runModifiers?.daily?.enabled ? ` Daily score posted for ${GAME.runModifiers.daily.seed}.` : '';
-    document.querySelector('#game-over-screen p').innerText = victory ? `You cleared the route map and survived Pinfall!${dailyText}` : `You failed to achieve the target point score. The run is over!${dailyText}`;
+    const dailyText = GAME.runModifiers?.daily?.enabled ? ' Daily score saved.' : '';
+    document.getElementById('game-over-screen').dataset.outcome = victory ? 'win' : 'loss';
+    document.getElementById('result-art').innerHTML = cabinetArt(victory ? 'trophy' : 'extra_roll', victory ? '#ffd27d' : '#b991ef');
+    document.querySelector('#game-over-screen p').innerText = victory ? `Twelve frames. Three bosses. The house is yours.${dailyText}` : `The house takes this one. Come back swinging.${dailyText}`;
 
     document.getElementById('final-frames').innerText = victory ? GAME.maxFrames : GAME.frame - 1;
     document.getElementById('final-level').innerText = GAME.frame;
@@ -8019,7 +8056,9 @@ function endTenPinGame() {
     recordTenPinStats();
     document.getElementById('game-over-screen').classList.remove('hidden');
     document.querySelector('#game-over-screen h2').innerText = 'GAME COMPLETE';
-    document.querySelector('#game-over-screen p').innerText = 'Final 10-pin score posted.';
+    document.querySelector('#game-over-screen p').innerText = 'Ten frames in the books. Make the next one legendary.';
+    document.getElementById('game-over-screen').dataset.outcome = 'win';
+    document.getElementById('result-art').innerHTML = cabinetArt('trophy');
     document.getElementById('final-frames').innerText = '10';
     document.getElementById('final-level').innerText = '10-PIN';
     document.getElementById('final-cash').innerText = uiNumber(GAME.score);

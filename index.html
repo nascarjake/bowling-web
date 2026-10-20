@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
     <link rel="stylesheet" href="./styles/arcade.css?v=20261019f">
     <link rel="stylesheet" href="./styles/proshop.css?v=20261019g2">
+    <link rel="stylesheet" href="./styles/cabinet.css?v=20261019h">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -74,7 +75,7 @@
 
     <div id="release-feedback" role="status" aria-live="polite" hidden></div>
 
-    <div id="tenpin-scoreboard-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 z-[43] hidden pointer-events-auto">
+    <div id="tenpin-scoreboard-screen" class="cabinet-overlay absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 z-[43] hidden pointer-events-auto">
         <div class="max-w-7xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5">
             <div class="flex items-center justify-between gap-5 border-b border-yellow-900 pb-4">
                 <h2 class="text-2xl font-bold text-yellow-300 crt-bloom">10-PIN SCOREBOARD</h2>
@@ -224,6 +225,7 @@
             <div class="arcade-rail rail-left" aria-hidden="true"></div>
             <div class="arcade-rail rail-right" aria-hidden="true"></div>
 
+            <div class="cabinet-marquee-meta" aria-hidden="true"><span>GOOSE GAMES PRESENTS</span><span>1 PLAYER · THE HOUSE IS OPEN</span></div>
             <header class="arcade-logo-row">
                 <span class="logo-pin-svg" aria-hidden="true"><svg viewBox="0 0 52 92"><path d="M24 5c7 0 10 4 9 13l-2 13c-1 8 1 14 6 22 7 11 9 25 3 34-7 11-21 11-28 0-6-9-4-23 3-34 5-8 7-14 6-22l-2-13C18 9 17 5 24 5Z"/><path d="M20 25c4 3 12 3 16 0M18 36c5 3 15 3 20 0"/></svg></span>
                 <div class="pinfall-title-lockup crt-bloom" aria-label="Pinfall">
@@ -236,20 +238,20 @@
             <main class="arcade-main-grid">
                 <section class="arcade-left-stack">
                     <article class="menu-mode-card menu-mode-rogue" data-mode="rogue">
-                        <div class="mode-card-topline">Arcade Run</div>
+                        <div class="mode-card-topline"><span>01 / THE CIRCUIT</span><b>12 FRAMES · 3 BOSSES</b></div>
                         <div class="mode-card-main">
                             <div class="mode-card-icon mode-card-icon-route" aria-hidden="true"><svg viewBox="0 0 96 96"><path d="M22 68h18l16-40h18"/><circle cx="22" cy="68" r="8"/><circle cx="40" cy="68" r="8"/><circle cx="56" cy="28" r="8"/><circle cx="74" cy="28" r="8"/></svg></div>
-                            <div><h3>Rogue-like Run</h3><p>Routes, shops, special pins, boss lanes.</p></div>
+                            <div><h3>Rogue-like Run</h3><p>Build your ball. Beat the house.</p></div>
                         </div>
                         <button id="btn-practice-lane" class="practice-menu-button" hidden><span>PLAY THE LANE</span><small>Free play · 10 to 120 pins</small></button>
                     <button id="btn-start-game" disabled class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-emerald-600 border-emerald-400 hover:bg-emerald-500 uppercase">Loading...</button>
                         <div id="run-slots" class="run-slots" aria-label="Saved roguelike runs"></div>
                     </article>
                     <article class="menu-mode-card menu-mode-tenpin" data-mode="tenpin">
-                        <div class="mode-card-topline">Classic Lane</div>
+                        <div class="mode-card-topline"><span>02 / THE ORIGINAL</span><b>10 FRAMES · PURE BOWLING</b></div>
                         <div class="mode-card-main">
                             <div class="mode-card-icon mode-card-icon-score" aria-hidden="true"><svg viewBox="0 0 96 96"><rect x="18" y="22" width="60" height="52"/><path d="M18 40h60M38 22v52M58 22v52"/><path d="M28 32h6M48 32h6M68 32h6M28 54h6M48 54h6M68 54h6"/></svg></div>
-                            <div><h3>10-Pin Mode</h3><p>Ten scored frames on one lane. Tap the scorecard for the full game.</p></div>
+                            <div><h3>10-Pin Mode</h3><p>Ten frames. Chase the perfect 300.</p></div>
                         </div>
                         <div class="mode-card-options">
                             <label><input id="tenpin-special-toggle" type="checkbox" checked class="accent-yellow-500"> Special shop</label>
@@ -261,6 +263,7 @@
 
                 <section class="arcade-center-stage">
                     <div id="menu-center-content" class="menu-center-content hidden" aria-live="polite"></div>
+                    <div class="attract-tag" aria-hidden="true">THE AFTER-HOURS BOWLING CIRCUIT</div>
                     <div class="central-bowling-graphic" aria-hidden="true">
                         <svg viewBox="0 0 520 360" role="img">
                             <defs>
@@ -329,13 +332,13 @@
     <div id="roguelike-run-screen" class="meta-screen absolute inset-0 z-[60] hidden overflow-y-auto p-5">
         <div class="meta-panel max-w-6xl mx-auto">
             <div class="meta-header">
-                <div><h2>ROGUELIKE RUN</h2><p>Continue a saved route, choose a relic, or start fresh through twelve strange frames.</p></div>
+                <div><h2>ROGUELIKE RUN</h2><p>Pick a keepsake. Choose a slot. Take on the house.</p></div>
                 <button id="btn-close-roguelike-run" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
             </div>
             <div class="roguelike-hub-grid">
                 <section class="roguelike-hub-primary">
                     <span>Selected Relic</span>
-                    <strong id="selected-relic-label">Last Frame Token</strong>
+                    <div id="selected-relic-art" class="selected-relic-art" aria-hidden="true"></div><strong id="selected-relic-label">Last Frame Token</strong>
                     <p id="selected-relic-desc">Once per run, if you fail a target, you get one emergency extra roll.</p>
                     <label class="seed-entry">
                         <span>Run Seed</span>
@@ -391,7 +394,7 @@
     <div id="stats-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5">
         <div class="meta-panel max-w-6xl mx-auto">
             <div class="meta-header">
-                <div><h2>STATS</h2><p>Run history, 10-pin history, averages, and all-time highs.</p></div>
+                <div><h2>STATS</h2><p>Your name in the house record book.</p></div>
                 <button id="btn-close-stats" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
             </div>
             <div id="stats-grid" class="stats-grid"></div>
@@ -472,14 +475,17 @@
     </div>
 
     <!-- EVENT OVERLAY -->
-    <div id="event-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[46] hidden overflow-y-auto">
-        <div class="lounge-panel max-w-4xl w-full pixel-border p-8 flex flex-col gap-6 text-center">
-            <div class="text-[13px] text-[#f2c36b]">LANE EVENT</div>
-            <h2 id="event-title" class="text-3xl font-bold text-[#f2c36b]">EVENT</h2>
-            <p id="event-desc" class="text-[15px] text-[#cbb89c] leading-relaxed"></p>
-            <div id="event-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"></div>
-        </div>
+    <div id="event-screen" class="absolute inset-0 z-[46] hidden">
+        <section class="event-cabinet" aria-labelledby="event-title">
+            <header class="event-header"><span class="arcade-eyebrow">PINFALL / AFTER-HOURS ENCOUNTER</span><div><span id="event-frame"></span><b id="event-cash"></b></div></header>
+            <div class="event-main">
+                <div class="event-story"><span id="event-kicker" class="arcade-eyebrow"></span><h2 id="event-title">LANE EVENT</h2><div id="event-art"></div><p id="event-desc"></p><span class="event-story-footer">A LITTLE DETOUR. A NEW ADVANTAGE.</span></div>
+                <div class="event-decision"><div class="event-pick-label"><span>MAKE YOUR CALL</span><b>CHOOSE ONE</b></div><div id="event-options"></div></div>
+            </div>
+            <footer class="event-footer"><span>ONE CHOICE. YOUR HOUSE STYLE.</span><span>YOUR REWARD → PRO SHOP → NEXT LANE</span></footer>
+        </section>
     </div>
+    <output id="event-reward-toast" role="status" hidden></output>
 
     <!-- DEBUG ACTIONS OVERLAY -->
     <div id="debug-actions-screen" class="absolute inset-0 z-[70] hidden pointer-events-none">
@@ -504,6 +510,7 @@
                 <button data-debug-action="stressRack">120-Pin Stress Test</button>
                 <button data-debug-action="bossShowdown">Boss Showdown Test</button>
                 <button data-debug-action="finalShowdown">Final Boss Test</button>
+                <button data-debug-action="eventGallery">Event Screen Test</button>
                 <button data-debug-action="dailyReview">Review Daily Runs</button>
             </div>
         </div>
@@ -516,39 +523,21 @@
 
     <!-- GAME OVER OVERLAY -->
     <div id="game-over-screen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 z-50 hidden">
-        <div class="max-w-md text-center flex flex-col items-center gap-6">
-            <h2 class="text-3xl font-extrabold text-red-500 crt-bloom">GAME OVER</h2>
-            <p class="text-xs text-gray-400 leading-relaxed">
-                You failed to achieve the target point score. The run is over!
-            </p>
-
-            <div class="w-full bg-violet-950/40 border-2 border-violet-800 p-4 rounded text-left flex flex-col gap-2">
-                <div class="flex justify-between text-xs text-gray-300">
-                    <span>FRAMES BEATEN:</span>
-                    <span id="final-frames" class="text-white font-bold">0</span>
-                </div>
-                <div class="flex justify-between text-xs text-gray-300">
-                    <span>FINAL FRAME LEVEL:</span>
-                    <span id="final-level" class="text-white font-bold">1</span>
-                </div>
-                <div class="flex justify-between text-xs text-gray-300">
-                    <span>TOTAL SCORE ACCUMULATED:</span>
-                    <span id="final-cash" class="text-yellow-400 font-bold">0</span>
-                </div>
-            </div>
-
-            <button id="btn-restart" class="pixel-btn w-full py-4 text-[10px] font-bold tracking-widest bg-red-700 border-red-500 hover:bg-red-600 uppercase">
-                Restart Run
-            </button>
-        </div>
+        <section class="results-cabinet">
+            <span class="arcade-eyebrow">PINFALL / FINAL TALLY</span><div id="result-art" aria-hidden="true"></div>
+            <h2>GAME OVER</h2><p>The house is waiting for a rematch.</p>
+            <div class="result-score"><span>TOTAL SCORE</span><strong id="final-cash">0</strong></div>
+            <div class="result-details"><div><span>FRAMES CLEARED</span><b id="final-frames">0</b></div><div><span>FINAL FRAME</span><b id="final-level">1</b></div></div>
+            <button id="btn-restart" class="arcade-launch" type="button">PLAY AGAIN <span aria-hidden="true">↗</span></button>
+        </section>
     </div>
 
     <!-- PAUSE / OPTIONS OVERLAY -->
-    <div id="pause-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 z-50 hidden">
+    <div id="pause-screen" class="cabinet-overlay absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 z-50 hidden">
         <div class="hud-panel max-w-md w-full border-4 border-violet-600 p-6 rounded-lg flex flex-col gap-5 pointer-events-auto">
             <div class="flex items-center justify-between border-b border-violet-900 pb-3">
-                <h2 class="text-xl font-bold text-violet-300 crt-bloom">PAUSED</h2>
-                <span class="text-[8px] text-gray-400">ESC / P</span>
+                <h2 class="text-xl font-bold text-violet-300 crt-bloom">INTERMISSION</h2>
+                <span class="text-[8px] text-gray-400">ESC</span>
             </div>
             <div id="pause-seed-chip" class="seed-chip pause-seed-chip hidden">SEED <span></span></div>
 
@@ -593,7 +582,7 @@
             <div class="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-[#6d5944] pb-5">
                 <div>
                     <h2 class="text-2xl font-bold text-[#f2c36b]">LEGEND</h2>
-                    <p class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Discovered run knowledge, 10-pin shop rules, and special lane weirdness.</p>
+                    <p class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Your field guide to the strange side of bowling.</p>
                 </div>
                 <button id="btn-close-legend" class="pixel-btn px-5 py-3 bg-red-700 border-red-500 hover:bg-red-600 text-[11px] font-bold uppercase">Close</button>
             </div>
@@ -611,6 +600,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019g"></script>
+    <script type="module" src="./src/main.js?v=20261019h"></script>
 </body>
 </html>
