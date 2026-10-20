@@ -1,0 +1,340 @@
+/* A cabinet display for equipment. Art and effects lead; specs are optional. */
+#shop-screen { display: grid; place-items: center; padding: clamp(12px, 2.4vw, 30px) !important; overflow: hidden; background: radial-gradient(ellipse at 20% 0, #234050a8, transparent 65%), #080e18f7; }
+#shop-screen.hidden, #shop-inspect-screen.hidden, #tenpin-rack-screen.hidden, #shop-purchase-feedback[hidden], #shop-next-goal-row.hidden, #shop-catalog-tabs[hidden] { display: none; }
+#shop-screen .proshop-actions > button { min-width: 0; }
+#shop-screen > .proshop-shell { position: relative; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; width: min(1440px, 100%); height: min(880px, 94dvh); max-height: 100%; min-height: 0; padding: 24px !important; gap: 17px !important; border: 1px solid #607485 !important; border-top: 4px solid #7be4ce !important; background: #0c1521 !important; box-shadow: inset 0 0 0 5px #060b13, 0 25px 80px #000a; overflow: hidden; }
+.proshop-shell::before { content: ''; position: absolute; inset: 8px 9px auto; height: 2px; background: repeating-linear-gradient(90deg, #7be4ce55 0 4px, transparent 4px 8px); pointer-events: none; }
+.proshop-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.proshop-header .arcade-eyebrow { font-size: 13px; color: #7be4ce; }
+#shop-screen .proshop-header h2 { margin: 5px 0; font: 48px/.95 'VT323', monospace !important; color: #ffebbf; text-shadow: 3px 3px #38414a; }
+#shop-screen .proshop-header p { margin: 0; color: #91a5b2; font: 18px/1.1 'VT323', monospace !important; }
+.proshop-wallet { padding: 8px 0 8px 24px; border-left: 1px solid #79848b55; text-align: right; flex-shrink: 0; }
+.proshop-wallet > span { color: #b8b09a; font: 11px/1 'VT323', monospace; letter-spacing: .12em; }
+.proshop-wallet strong { display: block; margin-top: 7px; color: #f5d28d; font: 40px/1 'VT323', monospace; }
+.proshop-wallet small { font-size: 22px; opacity: .6; }
+.proshop-loadout { display: flex; align-items: center; gap: 24px; min-width: 0; min-height: 68px; padding: 10px 17px; border-block: 1px solid #55718355; background: #15232f; }
+.loadout-label { flex-shrink: 0; }
+.loadout-label > span, .loadout-label > b { display: block; }
+.loadout-label > span { color: #7794a4; font: 10px/1 'VT323', monospace; letter-spacing: .12em; }
+.loadout-label > b { color: #a9d5cd; font: 19px/1 'VT323', monospace; margin-top: 6px; }
+.build-readouts { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.build-readouts > div { border-left: 1px solid #6b889444; padding-left: 20px; }
+.build-readouts span { display: block; color: #7f97a7; font: 10px/1 'VT323', monospace; }
+.build-readouts b { display: block; margin-top: 5px; color: #e2e3cf; font: 23px/1 'VT323', monospace; font-weight: normal; }
+.proshop-display { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; min-height: 0; }
+.proshop-shelf-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.proshop-shelf-heading > b { color: #acbdc6; font: 12px/1 'VT323', monospace; letter-spacing: .12em; }
+#shop-stock-note { font: 12px/1 'VT323', monospace; color: #708a9a; }
+#shop-screen #shop-items-container { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: stretch; gap: 16px !important; flex: initial; min-height: 0; max-height: none; overflow: auto; overscroll-behavior: contain; padding: 0 3px 3px 0; scrollbar-color: #496777 #111c29; scrollbar-width: thin; }
+.gear-card { --gear-color: #91d7d2; position: relative; display: flex; flex-direction: column; min-height: 360px; border: 1px solid #536b7c; border-top: 2px solid var(--gear-color); background: radial-gradient(ellipse at 50% 24%, color-mix(in srgb, var(--gear-color) 9%, transparent), transparent 60%), #101e2a; overflow: hidden; transition: border-color .15s, background .15s; }
+.gear-card.available:hover, .gear-card:focus-within { border-color: var(--gear-color); background-color: #172736; }
+.gear-card-top { display: flex; justify-content: space-between; align-items: center; height: 32px; flex-shrink: 0; padding: 5px 13px; border-bottom: 1px solid #566c7d33; }
+.gear-card-top > span { color: var(--gear-color); font: 10px/1 'VT323', monospace; letter-spacing: .16em; }
+.gear-inspect-button { width: 23px; height: 23px; border: 1px solid #66808c77; border-radius: 50%; background: #101c28; color: #a6c2c9; font: 17px/1 'VT323', monospace; cursor: pointer; }
+.gear-inspect-button:hover { border-color: var(--gear-color); color: var(--gear-color); }
+.gear-display { position: relative; display: grid; place-items: center; flex: 1 1 160px; min-height: 95px; max-height: 230px; }
+.gear-display > svg { height: 100%; width: 100%; transform: scale(1.2); max-height: 230px; filter: drop-shadow(0 8px 12px #0003); }
+.gear-copy { flex-shrink: 0; padding: 4px 20px 16px; }
+.gear-category { display: block; color: #6d8a9c; font: 10px/1 'VT323', monospace; letter-spacing: .14em; }
+#shop-screen .gear-copy h3 { min-height: 2.05em; margin: 6px 0 10px; color: #f3e6c9; font: 30px/1 'VT323', monospace !important; max-width: none; text-transform: uppercase; }
+.gear-benefit { display: flex; align-items: center; gap: 12px; min-height: 46px; padding-block: 8px; border-block: 1px solid #59738544; }
+.gear-benefit b { color: var(--gear-color); font: 34px/.95 'VT323', monospace; white-space: nowrap; }
+.gear-benefit > span { color: #9daeb9; font: 11px/1.1 'VT323', monospace; max-width: 110px; }
+#shop-screen .gear-copy p { margin: 10px 0 0; min-height: 2.1em; color: #9cafbc; font: 18px/1.05 'VT323', monospace !important; }
+.gear-buy { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 46px; margin: auto 14px 14px; padding: 10px 13px; color: #14212c; border: 1px solid color-mix(in srgb, var(--gear-color) 70%, #fff0cd); background: var(--gear-color); box-shadow: inset 0 -4px #0003; cursor: pointer; flex-shrink: 0; }
+.gear-buy > span { font: 9px/1.25 'Press Start 2P', monospace; }
+.gear-buy > b { font: 25px/1 'VT323', monospace; }
+.gear-buy:hover { filter: brightness(1.14); }
+.gear-buy:disabled { cursor: default; border-color: #526778; background: #233340; color: #8a9eaa; box-shadow: inset 0 -3px #10202a; filter: none; }
+.gear-card.short .gear-display { filter: saturate(.65); }
+.gear-card.owned { border-top-color: #789b8b; }
+.gear-card.owned .gear-display { filter: saturate(.4) brightness(.8); }
+.gear-card.owned .gear-buy { color: #9ac6b7; }
+.gear-owned-stamp { position: absolute; left: 50%; top: 58%; transform: translateX(-50%) rotate(-8deg); padding: 7px 13px; border: 2px solid #a7dbc0; color: #c2efda; background: #0b1e26e8; font: 16px/1 'VT323', monospace; letter-spacing: .12em; white-space: nowrap; }
+.gear-packed-count { position: absolute; bottom: 5px; right: 12px; color: var(--gear-color); background: #091721de; padding: 4px 7px; font: 11px/1 'VT323', monospace; }
+.proshop-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-top: 14px; border-top: 1px solid #55718366; }
+#shop-next-goal-row { display: block; min-width: 0; text-align: left; }
+#shop-next-goal-row > span { display: block; color: #6b8799; }
+#shop-next-target { display: block; margin-top: 5px; color: #bac9cd; font: 20px/1 'VT323', monospace; }
+.proshop-actions { display: flex; justify-content: flex-end; align-items: stretch; gap: 12px; }
+.proshop-actions > .arcade-launch { min-width: 240px; font-size: 9px; padding: 14px 18px; }
+.proshop-reroll { padding: 11px 18px; border: 1px solid #68828f; background: #142432; color: #a9c7cc; font: 15px/1 'VT323', monospace; cursor: pointer; white-space: nowrap; }
+.proshop-reroll:hover { color: #d6f2e6; border-color: #96c1bc; }
+.proshop-reroll:disabled { opacity: .45; cursor: default; filter: none; }
+#shop-catalog-tabs { display: flex; gap: 6px; }
+#shop-catalog-tabs button { border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; background: #152633; color: #8cabb9; font: 13px/1 'VT323', monospace; cursor: pointer; }
+#shop-catalog-tabs button[aria-pressed="true"] { color: #8de5d3; border-color: #8de5d3; background: #1a3340; }
+#shop-catalog-tabs small { margin-left: 7px; opacity: .65; }
+#shop-catalog-tabs button:disabled { opacity: .35; cursor: default; }
+.rack-bag-slots { display: flex; flex: 1; gap: 10px; }
+.rack-bag-slot { display: flex; align-items: center; gap: 9px; min-width: 0; width: 130px; height: 57px; border: 1px dashed #5c7b8c66; padding: 3px 8px; }
+.rack-bag-slot.is-packed { border: 1px solid #719e9c; background: #1c3740; }
+.rack-bag-slot svg { height: 52px; width: 30px; flex-shrink: 0; }
+.rack-bag-slot > span { color: #88aaa9; font: 14px/1 'VT323', monospace; }
+.empty-bag-slot { display: grid; place-items: center; height: 45px; width: 30px; font-size: 26px !important; color: #496674 !important; }
+.loadout-note { color: #99bbbd; text-align: right; font: 11px/1 'VT323', monospace; }
+.loadout-note span { display: block; margin-top: 5px; color: #688796; font-size: 10px; }
+#shop-screen #shop-items-container[data-catalog="rack"] { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(245px, auto); align-content: start; }
+[data-catalog="rack"] .gear-card { min-height: 245px; }
+[data-catalog="rack"] .gear-display { min-height: 80px; max-height: 125px; flex-basis: 105px; }
+[data-catalog="rack"] .gear-copy { flex-shrink: 0; padding: 0 14px 11px; }
+#shop-screen [data-catalog="rack"] .gear-copy h3 { font-size: 25px !important; min-height: 1em; margin: 5px 0 7px; }
+[data-catalog="rack"] .gear-copy p, [data-catalog="rack"] .gear-category { display: none; }
+[data-catalog="rack"] .gear-benefit { padding-block: 6px; min-height: 36px; }
+[data-catalog="rack"] .gear-benefit b { font-size: 27px; }
+[data-catalog="rack"] .gear-buy { min-height: 39px; padding: 7px 12px; margin: auto 12px 11px; }
+[data-catalog="rack"] .gear-buy b { font-size: 22px; }
+.boss-cleared > .proshop-shell { border-top-color: #f7ce8a !important; }
+.boss-cleared .proshop-header .arcade-eyebrow { color: #f7ce8a; }
+#shop-purchase-feedback { position: absolute; z-index: 5; bottom: 91px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 13px; width: max-content; max-width: 88%; padding: 8px 20px 8px 6px; border: 1px solid var(--gear-color); background: #0b1c2bf5; box-shadow: 5px 5px 0 #0006, 0 8px 36px #0008; pointer-events: none; animation: gear-equipped .22s ease-out; }
+#shop-purchase-feedback > svg { width: 76px; height: 58px; flex-shrink: 0; }
+#shop-purchase-feedback span { display: block; margin-bottom: 5px; color: var(--gear-color); font: 10px/1 'VT323', monospace; letter-spacing: .15em; }
+#shop-purchase-feedback b { color: #f1e8d2; font: 24px/1 'VT323', monospace; }
+#shop-purchase-feedback strong { color: var(--gear-color); font: 32px/1 'VT323', monospace; margin-left: 10px; }
+
+#shop-inspect-screen { display: grid; place-items: center; padding: 24px; background: #060c17ed; backdrop-filter: blur(5px); }
+.gear-inspector { width: min(850px, 100%); max-height: 94dvh; overflow: auto; background: #101e2c; border: 1px solid var(--gear-color); box-shadow: 8px 8px 0 #0008; }
+.gear-inspector > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: #172c3b; border-bottom: 1px solid #5c798b66; }
+.gear-inspector > header .arcade-eyebrow { color: var(--gear-color); font-size: 12px; }
+#btn-close-shop-inspect { border: 1px solid #728a97; padding: 8px 14px; color: #c5d6d9; background: #152433; font: 14px/1 'VT323', monospace; cursor: pointer; white-space: nowrap; }
+#gear-inspect-content { display: grid; grid-template-columns: .95fr 1.05fr; gap: 24px; align-items: center; padding: 30px; }
+.gear-inspect-art { text-align: center; background: radial-gradient(ellipse, color-mix(in srgb, var(--gear-color) 10%, transparent), transparent 70%); }
+.gear-inspect-art svg { width: 100%; max-height: 320px; }
+.gear-inspect-art > span { color: var(--gear-color); font: 12px/1 'VT323', monospace; letter-spacing: .15em; }
+.gear-inspect-copy h2 { color: #f6e8c9; font: 42px/1 'VT323', monospace; text-transform: uppercase; margin: 7px 0 20px; }
+.gear-inspect-copy .gear-benefit b { font-size: 43px; }
+.gear-inspect-copy > p { color: #b7c5cc; font: 22px/1.15 'VT323', monospace; margin: 20px 0; }
+.gear-spec-price { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #5c798b55; padding-top: 15px; }
+.gear-spec-price span { font: 12px/1 'VT323', monospace; color: #8ca5b3; }
+.gear-spec-price b { font: 30px/1 'VT323', monospace; color: var(--gear-color); }
+
+/* The same equipment art carries into manual rack placement. */
+#tenpin-rack-screen { display: grid; place-items: center; padding: 22px !important; overflow: auto; background: radial-gradient(ellipse at 25% 0, #24414b, #090f19 75%); }
+.rack-workbench { width: min(1050px, 100%); max-height: 94dvh; overflow: auto; padding: 25px; border: 1px solid #688390; border-top: 4px solid #85ddcc; background: #0c1826; box-shadow: 7px 7px 0 #0007; }
+.rack-workbench > header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid #66808f55; }
+.rack-workbench h2 { color: #ffebbe; font: 44px/1 'VT323', monospace; margin: 5px 0; }
+.rack-workbench p { color: #91aab7; font: 19px/1.1 'VT323', monospace; margin: 0; }
+#tenpin-rack-status { color: #89e5cd; font: 24px/1 'VT323', monospace; white-space: nowrap; }
+.rack-workbench-body { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 28px; align-items: center; margin-top: 23px; }
+#tenpin-rack-board { position: relative; min-height: 320px; height: min(48vh, 430px); width: 100%; border: 1px solid #8c785555; background: repeating-linear-gradient(90deg, transparent 0 24px, #13162044 24px 25px), linear-gradient(180deg, #49392c, #745636 75%, #302c29); box-shadow: inset 0 0 60px #050e1caa; }
+.rack-slot { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; flex-direction: column; width: 62px; height: 84px; padding: 2px; background: none; border: 1px solid transparent; cursor: pointer; }
+.rack-slot > svg { height: 68px; width: 40px; opacity: .4; }
+.rack-slot.is-special > svg { opacity: 1; filter: drop-shadow(0 0 8px #9ad9ce44); }
+.rack-slot > span { color: #b5b09b; background: #15212b; padding: 1px 5px; font: 13px/1 'VT323', monospace; }
+.rack-slot:hover { border-color: #9bdccd; background: #76b5b817; }
+.rack-workbench aside > .arcade-eyebrow { color: #8fc1c2; font-size: 12px; }
+#tenpin-rack-palette { display: flex; flex-direction: column; gap: 9px; margin-block: 12px 20px; }
+.rack-palette-pin { display: flex; align-items: center; gap: 13px; padding: 4px 12px; border: 1px solid #597687; background: #172b39; text-align: left; cursor: pointer; }
+.rack-palette-pin svg { width: 35px; height: 62px; flex-shrink: 0; }
+.rack-palette-pin b { display: block; color: #e7dbc2; font: 24px/1 'VT323', monospace; font-weight: normal; }
+.rack-palette-pin small { display: block; color: #79aca9; font: 10px/1 'VT323', monospace; margin-top: 5px; }
+.rack-palette-pin[aria-pressed="true"] { border-color: #9de7d3; background: #244a50; }
+.rack-palette-pin:disabled { opacity: .4; cursor: default; }
+.rack-workbench-actions { display: flex; flex-direction: column; gap: 10px; }
+.rack-workbench-actions .arcade-launch { font-size: 9px; }
+.gear-buy:focus-visible, .gear-inspect-button:focus-visible, .proshop-reroll:focus-visible, .rack-slot:focus-visible, .rack-palette-pin:focus-visible { outline: 2px solid #fff0ce; outline-offset: 3px; }
+@keyframes gear-equipped { from { opacity: 0; margin-bottom: -8px; } to { opacity: 1; margin-bottom: 0; } }
+
+@media (max-height: 780px) and (min-width: 761px) {
+    #shop-screen > .proshop-shell { padding: 18px 20px !important; gap: 12px !important; }
+    #shop-screen .proshop-header h2 { font-size: 39px !important; }
+    .proshop-loadout { min-height: 58px; padding-block: 7px; }
+    .gear-card { min-height: 330px; }
+    .gear-display { min-height: 85px; max-height: 160px; flex-basis: 100px; }
+    .gear-copy { flex-shrink: 0; padding: 3px 15px 11px; }
+    #shop-screen .gear-copy h3 { font-size: 27px !important; margin-block: 5px 8px; }
+    .gear-benefit { min-height: 37px; padding-block: 5px; }
+    .gear-benefit b { font-size: 29px; }
+    #shop-screen .gear-copy p { font-size: 17px !important; margin-top: 8px; }
+    .gear-buy { min-height: 42px; padding-block: 8px; margin: auto 12px 12px; }
+    .proshop-footer { padding-top: 10px; }
+    .proshop-actions > .arcade-launch { padding-block: 11px; }
+}
+@media (max-width: 1050px) {
+    .proshop-loadout { gap: 15px; padding-inline: 12px; }
+    .build-readouts > div { padding-left: 12px; }
+    .build-readouts b { font-size: 21px; }
+    .rack-bag-slot { width: 100px; gap: 5px; padding-inline: 5px; }
+    .loadout-note { font-size: 9px; }
+    #shop-stock-note { display: none; }
+    .gear-benefit { gap: 8px; }
+    .gear-benefit > span { font-size: 10px; }
+    #shop-screen .gear-copy h3 { font-size: 26px !important; }
+    #shop-screen #shop-items-container { gap: 11px !important; }
+}
+@media (max-width: 760px) and (orientation: portrait) {
+    #shop-screen { padding: max(8px, var(--safe-top)) max(8px, var(--safe-right)) max(8px, var(--safe-bottom)) max(8px, var(--safe-left)) !important; }
+    #shop-screen > .proshop-shell { height: 100%; max-height: 100%; padding: 14px 12px 11px !important; gap: 10px !important; }
+    .proshop-header { gap: 12px; }
+    .proshop-header .arcade-eyebrow { font-size: 8px; letter-spacing: .1em; }
+    #shop-screen .proshop-header h2 { font-size: 30px !important; margin-block: 4px; }
+    #shop-screen .proshop-header p { font-size: 14px !important; }
+    .proshop-wallet { padding: 4px 0 4px 10px; }
+    .proshop-wallet > span { font-size: 8px; }
+    .proshop-wallet strong { font-size: 29px; margin-top: 5px; }
+    .proshop-wallet small { font-size: 15px; }
+    .proshop-loadout { flex-wrap: wrap; gap: 7px; padding: 8px 10px; min-height: 0; }
+    .loadout-label { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .loadout-label > span { font-size: 8px; }
+    .loadout-label > b { margin: 0; font-size: 12px; }
+    .build-readouts { flex-basis: 100%; gap: 4px; }
+    .build-readouts > div { padding-left: 5px; }
+    .build-readouts > div:first-child { border: 0; padding: 0; }
+    .build-readouts span { font-size: 7px; }
+    .build-readouts b { font-size: 16px; margin-top: 4px; }
+    .proshop-display { gap: 7px; }
+    .proshop-shelf-heading { flex-wrap: wrap; gap: 7px; }
+    .proshop-shelf-heading > b { font-size: 10px; }
+    #shop-screen #shop-items-container { grid-template-columns: 1fr; align-content: start; gap: 9px !important; padding-right: 2px; }
+    .gear-card { display: grid; grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: 170px; }
+    .gear-card-top { grid-column: 1 / -1; height: 25px; padding: 3px 9px; }
+    .gear-card-top > span { font-size: 8px; }
+    .gear-inspect-button { width: 19px; height: 19px; font-size: 14px; }
+    .gear-display { grid-column: 1; grid-row: 2 / 4; min-height: 0; max-height: none; }
+    .gear-display > svg { max-height: 145px; }
+    .gear-copy { grid-column: 2; grid-row: 2; padding: 7px 10px 6px 0; }
+    .gear-category { display: none; }
+    #shop-screen .gear-copy h3 { min-height: 0; margin: 0 0 6px; font-size: 22px !important; }
+    .gear-benefit { min-height: 0; padding-block: 5px; gap: 8px; }
+    .gear-benefit b { font-size: 25px; }
+    .gear-benefit > span { font-size: 9px; }
+    #shop-screen .gear-copy p { font-size: 14px !important; min-height: 0; margin-top: 6px; }
+    .gear-buy { grid-column: 2; grid-row: 3; min-height: 34px; margin: 0 9px 9px 0; padding: 6px 9px; }
+    .gear-buy > span { font-size: 7px; }
+    .gear-buy > b { font-size: 21px; }
+    .gear-packed-count { right: 2px; bottom: 8px; font-size: 8px; }
+    .gear-owned-stamp { font-size: 11px; padding: 5px; }
+    .proshop-footer { padding-top: 8px; gap: 7px; }
+    #shop-next-goal-row { display: none; }
+    .proshop-actions { width: 100%; gap: 8px; }
+    .proshop-actions > .arcade-launch { flex: 1; min-width: 0; font-size: 8px; padding: 12px 13px !important; }
+    .proshop-actions .proshop-reroll { width: auto !important; flex: 0 0 auto; padding: 8px 10px !important; font-size: 11px !important; }
+    .rack-bag-slots { gap: 6px; }
+    .rack-bag-slot { width: auto; flex: 1; height: 47px; padding: 2px 4px; gap: 5px; }
+    .rack-bag-slot > span { font-size: 11px; }
+    .rack-bag-slot svg { height: 41px; width: 24px; }
+    .empty-bag-slot { width: 20px; height: 39px; }
+    .loadout-note { display: none; }
+    #shop-catalog-tabs { gap: 4px; width: 100%; }
+    #shop-catalog-tabs button { flex: 1; padding: 7px 5px; font-size: 11px; }
+    #shop-catalog-tabs small { margin-left: 3px; }
+    #shop-screen #shop-items-container[data-catalog="rack"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(260px, auto); }
+    [data-catalog="rack"] .gear-card { display: flex; min-height: 260px; }
+    [data-catalog="rack"] .gear-display { min-height: 67px; max-height: 90px; flex-basis: 75px; }
+    [data-catalog="rack"] .gear-copy { flex-shrink: 0; padding: 0 9px 8px; }
+    #shop-screen [data-catalog="rack"] .gear-copy h3 { font-size: 21px !important; min-height: 1.9em; margin: 3px 0; }
+    [data-catalog="rack"] .gear-benefit { display: block; min-height: 0; padding-block: 5px; }
+    [data-catalog="rack"] .gear-benefit b { font-size: 22px; }
+    [data-catalog="rack"] .gear-benefit > span { display: block; font-size: 8px; margin-top: 3px; }
+    [data-catalog="rack"] .gear-buy { min-height: 33px; margin: auto 8px 8px; padding: 5px 7px; }
+    [data-catalog="rack"] .gear-buy > span { font-size: 6px; }
+    #shop-purchase-feedback { bottom: 70px; max-width: 90%; gap: 5px; padding: 4px 10px 4px 0; }
+    #shop-purchase-feedback > svg { width: 57px; height: 47px; }
+    #shop-purchase-feedback span { font-size: 8px; }
+    #shop-purchase-feedback b { font-size: 19px; }
+    #shop-purchase-feedback strong { font-size: 23px; margin-left: 3px; }
+    #shop-inspect-screen { padding: 14px; }
+    .gear-inspector > header { padding: 10px 12px; }
+    .gear-inspector > header .arcade-eyebrow { font-size: 9px; }
+    #btn-close-shop-inspect { padding: 7px 10px; font-size: 12px; }
+    #gear-inspect-content { grid-template-columns: 1fr; gap: 20px; padding: 15px 23px 23px; }
+    .gear-inspect-art svg { max-height: 170px; }
+    .gear-inspect-art > span { font-size: 10px; }
+    .gear-inspect-copy h2 { font-size: 34px; margin-block: 5px 13px; }
+    .gear-inspect-copy .gear-benefit b { font-size: 36px; }
+    .gear-inspect-copy > p { font-size: 20px; margin-block: 15px; }
+    .rack-workbench { padding: 14px; max-height: calc(100dvh - 24px); }
+    #tenpin-rack-screen { padding: 12px !important; }
+    .rack-workbench > header { gap: 10px; padding-bottom: 12px; }
+    .rack-workbench h2 { font-size: 31px; }
+    .rack-workbench p { font-size: 15px; }
+    #tenpin-rack-status { font-size: 16px; }
+    .rack-workbench-body { grid-template-columns: 1fr; gap: 12px; margin-top: 13px; }
+    #tenpin-rack-board { min-height: 0; height: clamp(210px, 40vh, 330px); }
+    .rack-slot { width: 45px; height: 56px; }
+    .rack-slot > svg { height: 45px; width: 27px; }
+    .rack-slot > span { font-size: 10px; }
+    .rack-workbench aside > .arcade-eyebrow { font-size: 9px; }
+    #tenpin-rack-palette { flex-direction: row; gap: 6px; margin-block: 7px 12px; }
+    .rack-palette-pin { flex: 1; min-width: 0; gap: 5px; padding: 3px 6px; }
+    .rack-palette-pin svg { height: 45px; width: 24px; }
+    .rack-palette-pin b { font-size: 15px; }
+    .rack-palette-pin small { font-size: 7px; margin-top: 3px; }
+    .rack-workbench-actions { flex-direction: row; gap: 8px; }
+    .rack-workbench-actions > button { flex: 1; padding: 10px; font-size: 8px; }
+}
+@media (max-width: 400px) and (orientation: portrait) {
+    #shop-screen .proshop-header h2 { font-size: 26px !important; }
+    .gear-card { grid-template-columns: 84px minmax(0, 1fr); }
+    #shop-screen .gear-copy h3 { font-size: 21px !important; }
+    .gear-benefit b { font-size: 23px; }
+    .proshop-actions > .arcade-launch { font-size: 7px !important; }
+}
+@media (max-height: 540px) and (orientation: landscape) {
+    #shop-screen { padding: 8px !important; }
+    #shop-screen > .proshop-shell { height: 100%; padding: 10px 14px !important; gap: 8px !important; }
+    .proshop-header .arcade-eyebrow { font-size: 9px; }
+    #shop-screen .proshop-header h2 { font-size: 29px !important; }
+    #shop-screen .proshop-header p { display: none; }
+    .proshop-wallet { padding-block: 0; }
+    .proshop-wallet strong { font-size: 26px; margin-top: 2px; }
+    .proshop-wallet > span { font-size: 8px; }
+    .proshop-loadout { min-height: 40px; padding-block: 5px; }
+    .loadout-label > span { font-size: 8px; }
+    .loadout-label > b { font-size: 13px; margin-top: 4px; }
+    .build-readouts b { font-size: 17px; }
+    .build-readouts span { font-size: 8px; }
+    .proshop-display { gap: 6px; }
+    .proshop-shelf-heading > b { font-size: 9px; }
+    #shop-screen #shop-items-container { gap: 9px !important; align-content: start; grid-auto-rows: minmax(170px, auto); }
+    .gear-card, [data-catalog="rack"] .gear-card { display: grid; grid-template-columns: 70px minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: 170px; }
+    .gear-card-top { grid-column: 1 / -1; height: 22px; padding: 2px 7px; }
+    .gear-card-top > span { font-size: 8px; }
+    .gear-inspect-button { height: 17px; width: 17px; font-size: 12px; }
+    .gear-display, [data-catalog="rack"] .gear-display { grid-column: 1; grid-row: 2; min-height: 0; max-height: 80px; }
+    .gear-display > svg { max-height: 80px; }
+    .gear-copy, [data-catalog="rack"] .gear-copy { grid-column: 2; grid-row: 2; padding: 5px 7px 5px 0; }
+    #shop-screen .gear-copy h3, #shop-screen [data-catalog="rack"] .gear-copy h3 { font-size: 19px !important; min-height: 1.9em; margin: 0 0 4px; }
+    .gear-category, #shop-screen .gear-copy p { display: none; }
+    .gear-benefit, [data-catalog="rack"] .gear-benefit { display: block; padding-block: 4px; min-height: 0; }
+    .gear-benefit b, [data-catalog="rack"] .gear-benefit b { font-size: 22px !important; }
+    .gear-benefit > span { display: block; font-size: 8px; margin-top: 3px; }
+    .gear-buy, [data-catalog="rack"] .gear-buy { grid-column: 1 / -1; grid-row: 3; min-height: 32px; margin: 3px 7px 7px; padding: 5px 8px; }
+    .gear-buy > span { font-size: 7px; }
+    .gear-buy > b { font-size: 20px; }
+    .proshop-footer { padding-top: 6px; }
+    #shop-next-target { font-size: 15px; }
+    .proshop-actions > .arcade-launch { min-width: 180px; padding: 10px 13px; font-size: 8px; }
+    .proshop-reroll { padding: 8px 12px; font-size: 12px; }
+    .rack-bag-slot { height: 35px; }
+    .rack-bag-slot svg { height: 31px; width: 20px; }
+    .rack-bag-slot > span { font-size: 12px; }
+    .empty-bag-slot { height: 29px; font-size: 20px !important; }
+    #shop-catalog-tabs button { padding-block: 5px; font-size: 10px; }
+    #shop-screen #shop-items-container[data-catalog="rack"] { grid-auto-rows: auto; }
+    .loadout-note { display: none; }
+    #gear-inspect-content { padding: 18px; gap: 17px; }
+    .gear-inspect-art svg { max-height: 180px; }
+    .gear-inspect-copy h2 { font-size: 31px; margin-bottom: 10px; }
+    .gear-inspect-copy > p { font-size: 19px; margin-block: 12px; }
+    #shop-purchase-feedback { bottom: 62px; }
+    .rack-workbench { padding: 13px 20px; }
+    .rack-workbench h2 { font-size: 31px; }
+    .rack-workbench p { font-size: 16px; }
+    .rack-workbench-body { margin-top: 12px; grid-template-columns: minmax(0, 1fr) 240px; gap: 20px; }
+    #tenpin-rack-board { min-height: 0; height: 220px; }
+    .rack-slot { width: 42px; height: 54px; }
+    .rack-slot > svg { height: 43px; width: 26px; }
+    .rack-slot > span { font-size: 9px; }
+    #tenpin-rack-palette { margin-block: 7px 10px; gap: 5px; }
+    .rack-palette-pin { padding-block: 2px; }
+    .rack-palette-pin svg { height: 33px; width: 19px; }
+    .rack-palette-pin b { font-size: 18px; }
+    .rack-palette-pin small { font-size: 8px; margin-top: 2px; }
+    .rack-workbench-actions { gap: 6px; }
+    .rack-workbench-actions > button { padding: 8px 10px; font-size: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #shop-purchase-feedback { animation: none; }
+    .gear-card { transition: none; }
+}

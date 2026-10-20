@@ -13,6 +13,12 @@ import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './la
 import { createLanePresentation } from '../scene/presentation.js?v=20261019f';
 import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019f';
 
+import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=20261019g';
+
+let shopCatalogFilter = 'all';
+let shopInspectorReturnFocus = null;
+let shopFeedbackTimer = null;
+
 let displayedRouteStage = 1;
 let routePreviewNodeId = '';
 let routeMapResizeObserver = null;
@@ -4546,6 +4552,13 @@ function updateGameplayHud() {
 }
 
 function bindInputs() {
+    document.getElementById('btn-close-shop-inspect').addEventListener('click', () => closeShopInspector());
+    document.getElementById('shop-inspect-screen').addEventListener('click', event => {
+        if (event.target.id === 'shop-inspect-screen') closeShopInspector();
+    });
+    document.getElementById('shop-inspect-screen').addEventListener('keydown', event => {
+        if (event.code === 'Tab') { event.preventDefault(); document.getElementById('btn-close-shop-inspect').focus(); }
+    });
     if (window.ResizeObserver) {
         routeMapResizeObserver = new ResizeObserver(() => {
             if (GAME.state === 'ROUTE') drawRouteMapLines();
@@ -7021,7 +7034,12 @@ function tenPinRollMarks(frame, frameNumber) {
 }
 
 function showTenPinShop(frameNumber) {
+    closeShopInspector(false);
+    shopCatalogFilter = GAME.tenPin.fullBag ? 'pins' : 'all';
+    document.getElementById('shop-screen').classList.remove('boss-cleared');
+    document.getElementById('shop-screen').dataset.mode = 'tenpin';
     GAME.state = 'SHOP';
+    document.getElementById('shop-purchase-feedback').hidden = true;
     GAME.tenPin.awaitingShopFrame = frameNumber;
     GAME.tenPin.selectedRackSpecials = [];
     GAME.tenPin.shopSelection = [];
@@ -7030,8 +7048,9 @@ function showTenPinShop(frameNumber) {
     document.getElementById('shop-screen').classList.remove('hidden');
     document.getElementById('event-screen').classList.add('hidden');
     document.getElementById('route-screen').classList.add('hidden');
-    document.querySelector('#shop-screen h2').innerText = `FRAME ${frameNumber} RACK SHOP`;
-    document.querySelector('#shop-screen p').innerText = GAME.tenPin.fullBag ? 'Full bag: every item is available.' : 'Limited bag: 6 random items are available. Rerolling is allowed.';
+    document.querySelector('#shop-screen h2').innerText = 'RACK & ROLL.';
+    document.getElementById('shop-kicker').textContent = `CLASSIC / FRAME ${String(frameNumber).padStart(2, '0')} PRO SHOP`;
+    document.querySelector('#shop-screen p').innerText = 'Pick your pins. Pack your next throw.';
     document.getElementById('shop-next-goal-row').classList.add('hidden');
     document.getElementById('btn-next-frame').innerText = `Start Frame ${frameNumber}`;
     document.getElementById('btn-shop-reroll').classList.add('hidden');
@@ -7054,42 +7073,100 @@ function chooseTenPinShopSelection(force = false) {
 }
 
 function renderTenPinShop() {
-    const container = document.getElementById('shop-items-container');
-    container.innerHTML = '';
     const visibleItems = (GAME.tenPin.shopSelection?.length ? GAME.tenPin.shopSelection : TENPIN_SHOP_ITEMS.map(item => item.id))
-        .map(itemId => TENPIN_SHOP_ITEMS.find(item => item.id === itemId))
-        .filter(Boolean);
+        .map(itemId => TENPIN_SHOP_ITEMS.find(item => item.id === itemId)).filter(Boolean);
     const rerollButton = document.getElementById('btn-tenpin-reroll-shop');
     const rerollCost = tenPinShopRerollCost();
     rerollButton.classList.toggle('hidden', GAME.tenPin.fullBag);
     rerollButton.disabled = GAME.cash < rerollCost;
     rerollButton.classList.toggle('pixel-btn-disabled', GAME.cash < rerollCost);
-    rerollButton.innerText = `REROLL BAG - ${rerollCost} $`;
-    visibleItems.forEach((item) => {
-        const selectedCount = item.typeKey ? GAME.tenPin.selectedRackSpecials.filter(type => type === item.typeKey).length : 0;
-        const pinLimitReached = item.typeKey && GAME.tenPin.selectedRackSpecials.length >= 3;
-        const alreadyManual = item.id === 'manual_rack' && GAME.tenPin.manualRackNext;
-        const canAfford = GAME.cash >= item.cost && !pinLimitReached && !alreadyManual;
-        const category = item.category || 'UPGRADE';
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `shop-card ${shopCategoryClass(category)} ${canAfford ? 'shop-card-affordable' : 'shop-card-locked'}`;
-        itemDiv.innerHTML = `
-            <div class="shop-card-main">
-                <div class="shop-card-head">
-                    <span class="shop-card-icon">${shopCategoryIcon(category)}</span>
-                    <span class="shop-card-title">${escapeHtml(item.name)}${selectedCount ? ` x${selectedCount}` : ''}</span>
-                    <span class="shop-card-price">${item.cost} $</span>
-                </div>
-                <span class="shop-category-tag">${escapeHtml(category)}</span>
-                <p>${escapeHtml(item.desc)}</p>
-            </div>
-            <button class="pixel-btn shop-card-action ${canAfford ? 'bg-emerald-600 border-emerald-400' : 'pixel-btn-disabled'}"
-                ${canAfford ? '' : 'disabled'} onclick="purchaseTenPinItem('${item.id}')">
-                ${alreadyManual ? 'READY' : pinLimitReached ? 'RACK FULL' : canAfford ? 'BUY FOR RACK' : 'LACK OF FUNDS'}
-            </button>
-        `;
-        container.appendChild(itemDiv);
-    });
+    rerollButton.innerText = `NEW BAG / $${rerollCost}`;
+    document.getElementById('shop-cash-display').textContent = uiNumber(GAME.cash);
+    document.getElementById('shop-shelf-title').textContent = GAME.tenPin.fullBag ? 'THE FULL BAG' : 'TONIGHT’S FINDS';
+    document.getElementById('shop-stock-note').textContent = 'Up to 3 special pins per rack.';
+    const tabs = document.getElementById('shop-catalog-tabs');
+    tabs.hidden = false;
+    tabs.innerHTML = [['all', 'ALL GEAR'], ['pins', 'PIN RACK'], ['gear', 'BALL BAG']].map(([key, label]) => {
+        const count = visibleItems.filter(item => key === 'all' || (key === 'pins' ? item.typeKey : !item.typeKey)).length;
+        return `<button type="button" data-shelf="${key}" aria-pressed="${shopCatalogFilter === key}" ${count ? '' : 'disabled'}>${label} <small>${count}</small></button>`;
+    }).join('');
+    tabs.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+        shopCatalogFilter = button.dataset.shelf;
+        document.getElementById('shop-items-container').scrollTop = 0;
+        sfx.playTick();
+        renderTenPinShop();
+    }));
+    renderProShopCards(visibleItems.filter(item => shopCatalogFilter === 'all' || (shopCatalogFilter === 'pins' ? item.typeKey : !item.typeKey)), true);
+    renderProShopLoadout();
+}
+
+function renderProShopCards(items, classic = false) {
+    const container = document.getElementById('shop-items-container');
+    const scrollTop = container.scrollTop;
+    container.dataset.catalog = classic ? 'rack' : 'upgrades';
+    container.innerHTML = items.map((item, index) => {
+        const visual = shopVisual(item);
+        const cost = classic ? item.cost : upgradeCost(item);
+        const soldOut = !classic && (GAME.shopSoldOut || []).includes(item.id);
+        const count = classic && item.typeKey ? GAME.tenPin.selectedRackSpecials.filter(type => type === item.typeKey).length : 0;
+        const temporary = visual.duration !== 'THIS RUN';
+        const offer = shopOfferState({ cash: GAME.cash, cost, soldOut, temporary, rackFull: classic && item.typeKey && GAME.tenPin.selectedRackSpecials.length >= 3, ready: classic && item.id === 'manual_rack' && GAME.tenPin.manualRackNext });
+        const actionLabel = `${offer.label} ${item.name}${offer.canBuy ? ` for ${cost} Pin Dollars` : ''}`;
+        return `<article class="gear-card ${offer.state}" data-gear-id="${item.id}" style="--gear-color:${visual.color};--gear-order:${index}">
+            <div class="gear-card-top"><span>${visual.duration}</span><button type="button" class="gear-inspect-button" data-inspect-gear="${item.id}" aria-label="Inspect ${escapeHtml(item.name)}">i</button></div>
+            <div class="gear-display">${shopArtwork(item)}${count ? `<span class="gear-packed-count">×${count} PACKED</span>` : ''}${soldOut ? `<span class="gear-owned-stamp">✓ ${temporary ? 'PACKED' : 'INSTALLED'}</span>` : ''}</div>
+            <div class="gear-copy"><span class="gear-category">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.name)}</h3><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${visual.summary}</p></div>
+            <button type="button" class="gear-buy" data-buy-gear="${item.id}" aria-label="${escapeHtml(actionLabel)}" ${offer.canBuy ? '' : 'disabled'}><span>${offer.label}</span><b>${offer.state === 'owned' ? '✓' : `$${cost}`}</b></button>
+        </article>`;
+    }).join('');
+    container.scrollTop = scrollTop;
+    container.querySelectorAll('[data-buy-gear]').forEach(button => button.addEventListener('click', () => classic ? window.purchaseTenPinItem(button.dataset.buyGear) : window.purchaseUpgrade(button.dataset.buyGear)));
+    container.querySelectorAll('[data-inspect-gear]').forEach(button => button.addEventListener('click', () => openShopInspector(button.dataset.inspectGear, classic)));
+}
+
+function renderProShopLoadout() {
+    const container = document.getElementById('shop-loadout');
+    if (isTenPinMode()) {
+        const selected = GAME.tenPin.selectedRackSpecials;
+        const nextThrowReady = ['nextThrowMassBoost', 'nextThrowPowerBoost', 'nextThrowFocus', 'nextThrowHookBoost', 'nextThrowStability'].some(key => Boolean(GAME.activeUpgrades[key]));
+        container.innerHTML = `<div class="loadout-label"><span>YOUR NEXT RACK</span><b>${selected.length} / 3 PACKED</b></div><div class="rack-bag-slots">${Array.from({ length: 3 }, (_, index) => {
+            const key = selected[index];
+            return `<div class="rack-bag-slot ${key ? 'is-packed' : ''}">${key ? shopPinArt(key.toLowerCase()) : '<span class="empty-bag-slot">+</span>'}<span>${key ? escapeHtml(pinTypeLabel(key)) : 'EMPTY'}</span></div>`;
+        }).join('')}</div><div class="loadout-note">${GAME.tenPin.manualRackNext ? 'MANUAL SETUP READY' : 'AUTO RACK'}<span>${nextThrowReady ? 'BALL TECH PACKED' : 'PICK YOUR EDGE'}</span></div>`;
+    } else {
+        const u = GAME.activeUpgrades;
+        container.innerHTML = `<div class="loadout-label"><span>YOUR HOUSE BUILD</span><b>${GAME.upgradePurchases || 0} ${GAME.upgradePurchases === 1 ? 'UPGRADE' : 'UPGRADES'}</b></div><div class="build-readouts">${[['CORE', `${uiNumber(u.ballMass)} LB`], ['SIZE', `${Math.round(u.ballSize * 100)}%`], ['PIN VALUE', `×${u.pinValueMultiplier.toFixed(2)}`], ['STEERING', u.spinPower > 0 ? 'ONLINE' : 'OFFLINE'], ['EXTRA ROLLS', `+${u.extraRolls}`]].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('')}</div>`;
+    }
+}
+
+function openShopInspector(itemId, classic) {
+    if (GAME.state !== 'SHOP') return;
+    const item = (classic ? TENPIN_SHOP_ITEMS : SHOP_UPGRADES).find(candidate => candidate.id === itemId);
+    if (!item) return;
+    const visual = shopVisual(item);
+    const screen = document.getElementById('shop-inspect-screen');
+    shopInspectorReturnFocus = document.activeElement;
+    screen.style.setProperty('--gear-color', visual.color);
+    document.getElementById('gear-inspect-content').innerHTML = `<div class="gear-inspect-art">${shopArtwork(item)}<span>${visual.duration}</span></div><div class="gear-inspect-copy"><span class="arcade-eyebrow">${escapeHtml(item.category)}</span><h2 id="gear-inspect-name">${escapeHtml(item.name)}</h2><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${renderVocabularyText(item.desc)}</p><div class="gear-spec-price"><span>HOUSE PRICE</span><b>$${classic ? item.cost : upgradeCost(item)}</b></div></div>`;
+    screen.classList.remove('hidden');
+    document.getElementById('btn-close-shop-inspect').focus({ preventScroll: true });
+    sfx.playTick();
+}
+
+function closeShopInspector(restoreFocus = true) {
+    document.getElementById('shop-inspect-screen')?.classList.add('hidden');
+    if (restoreFocus && shopInspectorReturnFocus?.isConnected) shopInspectorReturnFocus.focus({ preventScroll: true });
+    shopInspectorReturnFocus = null;
+}
+
+function showShopPurchase(item) {
+    const feedback = document.getElementById('shop-purchase-feedback');
+    const visual = shopVisual(item);
+    clearTimeout(shopFeedbackTimer);
+    feedback.style.setProperty('--gear-color', visual.color);
+    feedback.innerHTML = `${shopArtwork(item)}<div><span>${visual.duration === 'THIS RUN' ? 'UPGRADE INSTALLED' : 'READY TO ROLL'}</span><b>${escapeHtml(item.name)}</b></div><strong>✓</strong>`;
+    feedback.hidden = false;
+    shopFeedbackTimer = setTimeout(() => { feedback.hidden = true; }, 2200);
 }
 
 function tenPinShopRerollCost() {
@@ -7098,9 +7175,11 @@ function tenPinShopRerollCost() {
 }
 
 window.purchaseTenPinItem = function(itemId) {
+    if (GAME.state !== 'SHOP' || !isTenPinMode()) return;
     const item = TENPIN_SHOP_ITEMS.find(candidate => candidate.id === itemId);
     if (!item || GAME.cash < item.cost) return;
     if (item.typeKey && GAME.tenPin.selectedRackSpecials.length >= 3) return;
+    if (item.id === 'manual_rack' && GAME.tenPin.manualRackNext) return;
     GAME.cash -= item.cost;
     if (item.typeKey) GAME.tenPin.selectedRackSpecials.push(item.typeKey);
     if (item.effect) item.effect();
@@ -7108,6 +7187,7 @@ window.purchaseTenPinItem = function(itemId) {
     document.getElementById('shop-cash-display').innerText = uiNumber(GAME.cash);
     document.getElementById('shop-cash-display').title = `Exact: ${uiExactNumber(GAME.cash)}`;
     renderTenPinShop();
+    showShopPurchase(item);
     updateUI();
 };
 
@@ -7204,6 +7284,8 @@ function hideLegend() {
 }
 
 function closeTopmostOverlay() {
+    const inspect = document.getElementById('shop-inspect-screen');
+    if (inspect && !inspect.classList.contains('hidden')) { closeShopInspector(); return true; }
     const legendScreen = document.getElementById('legend-screen');
     if (legendScreen && !legendScreen.classList.contains('hidden')) {
         hideLegend();
@@ -7297,12 +7379,12 @@ function renderManualRackScreen() {
         const purchaseIndex = assignments[slotIndex];
         const typeKey = purchaseIndex !== null && purchaseIndex !== undefined ? selectedPins[purchaseIndex] : null;
         const button = document.createElement('button');
-        button.className = `absolute -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border-4 text-[12px] font-bold ${typeKey ? 'border-yellow-300 text-black' : 'border-gray-500 text-gray-300 bg-black/70 hover:border-yellow-400'}`;
+        button.className = `rack-slot ${typeKey ? 'is-special' : ''}`;
         button.style.left = `${slot.x}%`;
         button.style.top = `${slot.y}%`;
-        button.style.background = typeKey ? pinTypeColor(typeKey) : '';
-        button.innerText = typeKey ? pinTypeLabel(typeKey).slice(0, 3).toUpperCase() : slot.label;
+        button.innerHTML = `${shopPinArt(typeKey ? typeKey.toLowerCase() : 'standard')}<span>${slot.label}</span>`;
         button.title = typeKey ? `${pinTypeLabel(typeKey)} in ${slot.label} pin slot` : `${slot.label} pin slot`;
+        button.setAttribute('aria-label', button.title);
         button.addEventListener('click', () => {
             if (typeKey) {
                 assignments[slotIndex] = null;
@@ -7320,9 +7402,10 @@ function renderManualRackScreen() {
     selectedPins.forEach((typeKey, index) => {
         const placed = placedIndexes.has(index);
         const button = document.createElement('button');
-        button.className = `pixel-btn py-3 px-4 text-[11px] text-left ${selectedIndex === index ? 'bg-yellow-600 border-yellow-300 text-black' : placed ? 'pixel-btn-disabled' : 'bg-violet-800 border-violet-500'}`;
+        button.className = 'rack-palette-pin';
+        button.setAttribute('aria-pressed', String(selectedIndex === index));
         button.disabled = placed;
-        button.innerText = `${index + 1}. ${pinTypeLabel(typeKey)}${placed ? ' - placed' : ''}`;
+        button.innerHTML = `${shopPinArt(typeKey.toLowerCase())}<span><b>${escapeHtml(pinTypeLabel(typeKey))}</b><small>${placed ? '✓ PLACED' : 'PICK A SLOT'}</small></span>`;
         button.addEventListener('click', () => {
             GAME.tenPin.manualRackSelectedIndex = index;
             renderManualRackScreen();
@@ -7331,7 +7414,7 @@ function renderManualRackScreen() {
     });
 
     const placedCount = placedIndexes.size;
-    status.innerText = `${placedCount}/${selectedPins.length} placed`;
+    status.innerText = `${placedCount} / ${selectedPins.length} PINS SET`;
     document.getElementById('btn-confirm-manual-rack').disabled = !manualRackIsComplete();
     document.getElementById('btn-confirm-manual-rack').classList.toggle('pixel-btn-disabled', !manualRackIsComplete());
 }
@@ -7366,10 +7449,18 @@ function renderTenPinScoreboard() {
 }
 
 function triggerShopTransition() {
+    closeShopInspector(false);
+    document.getElementById('route-screen').classList.add('hidden');
+    document.getElementById('shop-screen').dataset.mode = 'roguelike';
+    document.getElementById('shop-catalog-tabs').hidden = true;
+    document.getElementById('shop-shelf-title').textContent = 'FRESH FROM THE HOUSE';
+    document.getElementById('shop-stock-note').textContent = 'Prices rise as you upgrade.';
+    document.getElementById('shop-kicker').textContent = GAME.currentRoute?.boss ? 'HOUSE BOSS DEFEATED / PRO SHOP' : `FRAME ${String(GAME.frame).padStart(2, '0')} CLEARED / PRO SHOP`;
     const enteringShop = GAME.state !== 'SHOP';
     if (GAME.currentRoute?.boss) recordBossBeat(GAME.currentRoute);
     GAME.state = 'SHOP';
     if (enteringShop) {
+        document.getElementById('shop-purchase-feedback').hidden = true;
         GAME.shopRerolls = 0;
         GAME.shopSoldOut = [];
     }
@@ -7379,8 +7470,8 @@ function triggerShopTransition() {
     document.getElementById('btn-tenpin-reroll-shop').classList.add('hidden');
     document.getElementById('btn-shop-reroll').classList.remove('hidden');
     document.getElementById('shop-screen').classList.toggle('boss-cleared', Boolean(GAME.currentRoute?.boss));
-    document.querySelector('#shop-screen h2').innerText = GAME.currentRoute?.boss ? 'HOUSE BOSS DEFEATED!' : 'FRAME CLEARED!';
-    document.querySelector('#shop-screen p').innerText = 'Shop or continue to the route map for your next lane.';
+    document.querySelector('#shop-screen h2').innerText = GAME.currentRoute?.boss ? 'THE HOUSE IS YOURS.' : 'BUILD YOUR HOUSE.';
+    document.querySelector('#shop-screen p').innerText = 'Pick some trouble. Take it to the lane.';
     document.getElementById('shop-next-goal-row').classList.remove('hidden');
 
     const nextFrame = Math.min(GAME.maxFrames, GAME.frame + 1);
@@ -7403,31 +7494,8 @@ function triggerShopTransition() {
         .filter(Boolean);
     selection.forEach(item => rememberLegendSeen('upgrades', item.id));
 
-    selection.forEach(item => {
-        const cost = upgradeCost(item);
-        const soldOut = (GAME.shopSoldOut || []).includes(item.id);
-        const canAfford = GAME.cash >= cost && !soldOut;
-        const category = item.category || 'UPGRADE';
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `shop-card ${shopCategoryClass(category)} ${canAfford ? 'shop-card-affordable' : 'shop-card-locked'} ${soldOut ? 'shop-card-sold-out' : ''}`;
-
-        itemDiv.innerHTML = `
-            <div class="shop-card-main">
-                <div class="shop-card-head">
-                    <span class="shop-card-icon">${shopCategoryIcon(category)}</span>
-                    <span class="shop-card-title">${escapeHtml(item.name)}</span>
-                    <span class="shop-card-price">${cost} $</span>
-                </div>
-                <span class="shop-category-tag">${escapeHtml(category)}</span>
-                <p>${renderVocabularyText(item.desc)}</p>
-            </div>
-            <button class="pixel-btn shop-card-action ${canAfford ? 'bg-emerald-600 border-emerald-400' : 'pixel-btn-disabled'}"
-                ${canAfford ? '' : 'disabled'} onclick="purchaseUpgrade('${item.id}')">
-                ${soldOut ? 'SOLD OUT' : canAfford ? 'BUY UPGRADE' : 'LACK OF FUNDS'}
-            </button>
-        `;
-        container.appendChild(itemDiv);
-    });
+    renderProShopCards(selection);
+    renderProShopLoadout();
 }
 
 function shopRerollCost() {
@@ -7440,24 +7508,9 @@ function renderShopRerollButton() {
     if (!button) return;
     const cost = Math.max(0, shopRerollCost() - shopRerollDiscount());
     const canAfford = GAME.cash >= cost;
-    button.innerText = `REROLL - ${cost} $`;
+    button.innerText = `NEW STOCK / $${cost}`;
     button.disabled = !canAfford;
     button.classList.toggle('pixel-btn-disabled', !canAfford);
-}
-
-function shopCategoryClass(category) {
-    return `shop-card-${String(category || 'upgrade').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-}
-
-function shopCategoryIcon(category) {
-    const key = String(category || '').toUpperCase();
-    if (key.includes('BALL')) return '<i class="fa-solid fa-bowling-ball"></i>';
-    if (key.includes('PIN')) return '<i class="fa-solid fa-map-pin"></i>';
-    if (key.includes('CONTROL')) return '<i class="fa-solid fa-sliders"></i>';
-    if (key.includes('CONSISTENCY')) return '<i class="fa-solid fa-bullseye"></i>';
-    if (key.includes('ONE THROW')) return '<i class="fa-solid fa-bolt"></i>';
-    if (key.includes('ECONOMY')) return '<i class="fa-solid fa-coins"></i>';
-    return '<i class="fa-solid fa-star"></i>';
 }
 
 function upgradeCost(item) {
@@ -7880,6 +7933,7 @@ function resolveEventChoice(event, choice) {
 }
 
 window.purchaseUpgrade = function(itemId) {
+    if (GAME.state !== 'SHOP' || isTenPinMode()) return;
     const upgrade = SHOP_UPGRADES.find(u => u.id === itemId);
     if (!upgrade) return;
     if ((GAME.shopSoldOut || []).includes(itemId)) return;
@@ -7896,6 +7950,7 @@ window.purchaseUpgrade = function(itemId) {
     autoSaveRunSlot();
 
     triggerShopTransition();
+    showShopPurchase(upgrade);
     updateUI();
 };
 

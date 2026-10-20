@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="./styles/debug.css">
     <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
     <link rel="stylesheet" href="./styles/arcade.css?v=20261019f">
+    <link rel="stylesheet" href="./styles/proshop.css?v=20261019g">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -83,27 +84,12 @@
         </div>
     </div>
 
-    <div id="tenpin-rack-screen" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-4 z-[44] hidden pointer-events-auto">
-        <div class="max-w-5xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-yellow-900 pb-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-yellow-300 crt-bloom">RACK IT YOURSELF</h2>
-                    <p class="text-[12px] text-gray-400 mt-2">Place every bought special pin into the traditional 10-pin triangle.</p>
-                </div>
-                <div id="tenpin-rack-status" class="text-[12px] text-emerald-300 uppercase"></div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-7 items-center">
-                <div id="tenpin-rack-board" class="relative mx-auto w-full max-w-xl aspect-[1.2/1] border-2 border-yellow-700 bg-black/50"></div>
-                <div class="flex flex-col gap-4">
-                    <div>
-                        <div class="text-[12px] text-gray-400 uppercase mb-3">Bought Pins</div>
-                        <div id="tenpin-rack-palette" class="flex flex-col gap-3"></div>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        <button id="btn-clear-manual-rack" class="pixel-btn py-3 bg-gray-700 border-gray-500 hover:bg-gray-600 text-[11px] font-bold uppercase">Clear Placement</button>
-                        <button id="btn-confirm-manual-rack" class="pixel-btn py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[12px] font-bold uppercase">Launch Frame</button>
-                    </div>
-                </div>
+    <div id="tenpin-rack-screen" class="absolute inset-0 z-[44] hidden">
+        <div class="rack-workbench">
+            <header><div><span class="arcade-eyebrow">PRO SHOP / RACK WORKBENCH</span><h2>SET THE DECK.</h2><p>Choose a special pin. Give it a place.</p></div><strong id="tenpin-rack-status"></strong></header>
+            <div class="rack-workbench-body">
+                <div id="tenpin-rack-board" aria-label="Ten-pin placement board"></div>
+                <aside><span class="arcade-eyebrow">YOUR SPECIAL PINS</span><div id="tenpin-rack-palette"></div><div class="rack-workbench-actions"><button id="btn-clear-manual-rack" class="proshop-reroll" type="button">CLEAR PLACEMENT</button><button id="btn-confirm-manual-rack" class="arcade-launch" type="button">LAUNCH FRAME ↗</button></div></aside>
             </div>
         </div>
     </div>
@@ -430,40 +416,34 @@
         </div>
     </div>
 
-    <!-- ROGUELIKE SHOP OVERLAY (Triggers between frames) -->
-    <div id="shop-screen" class="absolute inset-0 bg-[#090412]/98 flex flex-col items-center justify-center p-4 z-40 hidden overflow-y-auto">
-        <div class="shop-shell max-w-6xl w-full bg-black/95 pixel-border border-purple-600 p-8 flex flex-col gap-7">
-            <div class="shop-header flex flex-col md:flex-row md:items-center justify-between border-b border-purple-900 pb-5 gap-5">
-                <div>
-                    <h2 class="text-2xl font-bold text-purple-400 crt-bloom">FRAME CLEARED!</h2>
-                    <p class="text-[13px] text-gray-400 mt-2">Upgrade your setup before the next Frame challenge starts!</p>
-                </div>
-                <div class="shop-cash-bank bg-yellow-950/60 border-2 border-yellow-500 px-5 py-3 rounded flex items-center justify-between gap-5">
-                    <span class="text-[13px] text-yellow-500 font-bold">PIN DOLLARS:</span>
-                    <span id="shop-cash-display" class="text-2xl text-yellow-400 font-bold">0</span>
-                </div>
+    <!-- THE PRO SHOP -->
+    <div id="shop-screen" class="absolute inset-0 z-40 hidden">
+        <div class="proshop-shell">
+            <header class="proshop-header">
+                <div><span id="shop-kicker" class="arcade-eyebrow">PINFALL / THE AFTER-HOURS PRO SHOP</span><h2>BUILD YOUR HOUSE.</h2><p>Pick some trouble. Take it to the lane.</p></div>
+                <div class="proshop-wallet"><span>PIN DOLLARS</span><strong><small>$</small> <span id="shop-cash-display">0</span></strong></div>
+            </header>
+            <div id="shop-loadout" class="proshop-loadout" aria-label="Current equipment"></div>
+            <div class="proshop-display">
+                <div class="proshop-shelf-heading"><b id="shop-shelf-title">FRESH FROM THE HOUSE</b><nav id="shop-catalog-tabs" aria-label="Shop shelves" hidden></nav><span id="shop-stock-note">Prices rise as you upgrade.</span></div>
+                <div id="shop-items-container" aria-label="Available equipment"></div>
             </div>
-
-            <!-- Grid of shop options -->
-            <div id="shop-items-container" class="grid grid-cols-1 md:grid-cols-3 gap-5 overflow-y-auto pr-2">
-                <!-- Shop items generated dynamically -->
-            </div>
-
-            <div class="shop-footer flex flex-col md:flex-row justify-between items-center gap-5 border-t border-purple-900 pt-5">
-                <div id="shop-next-goal-row" class="text-[12px] text-gray-400">
-                   <span id="shop-next-target" class="text-white font-bold text-base">20 Points</span>
+            <footer class="proshop-footer">
+                <div id="shop-next-goal-row"><span class="arcade-eyebrow">NEXT UP</span><strong id="shop-next-target">Choose your next lane</strong></div>
+                <div class="proshop-actions">
+                    <button id="btn-shop-reroll" class="proshop-reroll hidden" type="button">Reroll Shop</button>
+                    <button id="btn-tenpin-reroll-shop" class="proshop-reroll hidden" type="button">Reroll Bag</button>
+                    <button id="btn-next-frame" class="arcade-launch" type="button">Return to Route Map</button>
                 </div>
-                <button id="btn-shop-reroll" class="pixel-btn px-8 py-4 bg-purple-700 border-purple-400 hover:bg-purple-600 text-[13px] font-bold uppercase hidden">
-                    Reroll Shop
-                </button>
-                <button id="btn-next-frame" class="pixel-btn px-8 py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[13px] font-bold uppercase">
-                    Launch Next Frame
-                </button>
-                <button id="btn-tenpin-reroll-shop" class="pixel-btn px-8 py-4 bg-cyan-700 border-cyan-400 hover:bg-cyan-600 text-[13px] font-bold uppercase hidden">
-                    Reroll Bag
-                </button>
-            </div>
+            </footer>
+            <output id="shop-purchase-feedback" role="status" hidden></output>
         </div>
+    </div>
+    <div id="shop-inspect-screen" class="absolute inset-0 z-[62] hidden">
+        <section class="gear-inspector" role="dialog" aria-modal="true" aria-labelledby="gear-inspect-name">
+            <header><span class="arcade-eyebrow">PRO SHOP / EQUIPMENT INSPECT</span><button id="btn-close-shop-inspect" type="button" aria-label="Back to shop">BACK ×</button></header>
+            <div id="gear-inspect-content"></div>
+        </section>
     </div>
 
     <!-- ROUTE MAP OVERLAY -->
@@ -631,6 +611,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019f"></script>
+    <script type="module" src="./src/main.js?v=20261019g"></script>
 </body>
 </html>
