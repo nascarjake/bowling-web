@@ -56,7 +56,7 @@
 #shop-next-goal-row { display: block; min-width: 0; text-align: left; }
 #shop-next-goal-row > span { display: block; color: #6b8799; }
 #shop-next-target { display: block; margin-top: 5px; color: #bac9cd; font: 20px/1 'VT323', monospace; }
-.proshop-actions { display: flex; justify-content: flex-end; align-items: stretch; gap: 12px; }
+.proshop-actions { margin-left: auto; display: flex; justify-content: flex-end; align-items: stretch; gap: 12px; }
 .proshop-actions > .arcade-launch { min-width: 240px; font-size: 9px; padding: 14px 18px; }
 .proshop-reroll { padding: 11px 18px; border: 1px solid #68828f; background: #142432; color: #a9c7cc; font: 15px/1 'VT323', monospace; cursor: pointer; white-space: nowrap; }
 .proshop-reroll:hover { color: #d6f2e6; border-color: #96c1bc; }
