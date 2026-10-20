@@ -1,1 +1,617 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Pinfall</title><script src="https://cdn.tailwindcss.com"></script><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script><link rel="stylesheet" href="./base.css"></head><body class="relative w-screen h-screen flex items-center justify-center text-white"><section id="studio-splash" class="studio-splash" aria-label="Goose Games"><img src="./logo.png" alt="Goose Games"></section><div class="scanlines"></div><div id="mood-overlay" class="fixed inset-0 z-[9] pointer-events-none hidden"></div><div id="canvas-container" class="absolute inset-0 w-full h-full bg-[#0b0615]"></div><div id="loading-screen" class="absolute inset-0 bg-[#07030f] flex flex-col items-center justify-center p-6 z-[70]"><div class="flex flex-col items-center gap-7 text-center"><div class="relative loading-orbit flex items-center justify-center"><i class="fa-solid fa-bowling-ball text-4xl text-yellow-300 absolute"></i></div><div class="flex flex-col gap-3 max-w-lg"><div class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 crt-bloom">PINFALL</div><div id="loading-status" class="text-[9px] text-violet-200 uppercase tracking-widest">WAXING LANES...</div><div class="h-3 border-2 border-violet-700 bg-black overflow-hidden"><div id="loading-bar" class="h-full bg-gradient-to-r from-yellow-300 via-pink-500 to-cyan-300 transition-all duration-300" style="width: 6%"></div></div></div></div></div><button id="btn-debug-mode" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto text-[8px] px-3 py-2 border-2 border-cyan-400 bg-black/70 text-cyan-200">DEBUG F1</button><div id="tenpin-scoreboard-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 z-[43] hidden pointer-events-auto"><div class="max-w-7xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5"><div class="flex items-center justify-between gap-5 border-b border-yellow-900 pb-4"><h2 class="text-2xl font-bold text-yellow-300 crt-bloom">10-PIN SCOREBOARD</h2><button id="btn-close-scoreboard" class="pixel-btn px-5 py-3 bg-red-700 border-red-500 hover:bg-red-600 text-[11px] font-bold uppercase">Close</button></div><div id="tenpin-scoreboard-grid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div></div></div><div id="tenpin-rack-screen" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-4 z-[44] hidden pointer-events-auto"><div class="max-w-5xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5"><div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-yellow-900 pb-4"><div><h2 class="text-2xl font-bold text-yellow-300 crt-bloom">RACK IT YOURSELF</h2><p class="text-[12px] text-gray-400 mt-2">Place every bought special pin into the traditional 10-pin triangle.</p></div><div id="tenpin-rack-status" class="text-[12px] text-emerald-300 uppercase"></div></div><div class="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-7 items-center"><div id="tenpin-rack-board" class="relative mx-auto w-full max-w-xl aspect-[1.2/1] border-2 border-yellow-700 bg-black/50"></div><div class="flex flex-col gap-4"><div><div class="text-[12px] text-gray-400 uppercase mb-3">Bought Pins</div><div id="tenpin-rack-palette" class="flex flex-col gap-3"></div></div><div class="flex flex-col gap-3"><button id="btn-clear-manual-rack" class="pixel-btn py-3 bg-gray-700 border-gray-500 hover:bg-gray-600 text-[11px] font-bold uppercase">Clear Placement</button> <button id="btn-confirm-manual-rack" class="pixel-btn py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[12px] font-bold uppercase">Launch Frame</button></div></div></div></div></div><div id="game-hud" class="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none z-20"><div class="flex justify-between items-start w-full gap-4"><div id="score-hud-panel" class="hud-panel hud-breathe border-4 p-3 rounded-lg flex flex-col gap-2 pointer-events-auto max-w-[320px] cursor-pointer"><div class="flex justify-between gap-4 text-[10px] text-white"><span><span id="hud-frame-label">ROUND</span> <span id="hud-frame" class="text-yellow-300 text-sm">1</span></span> <span><span id="hud-score-label">PINS</span> <span id="hud-score" class="text-emerald-300 text-sm">0</span><span id="hud-target-separator" class="text-gray-500">/</span><span id="hud-target" class="text-yellow-300 text-sm">8</span></span> <span id="hud-rack-pill" class="hud-rack-pill"><span id="hud-rack-label">RACK</span> <span id="hud-rack-count">10</span></span></div><div class="border-2 border-white bg-black"><div class="grid grid-cols-[1fr_56px] border-b-2 border-white"><div class="px-2 py-1 text-[9px] text-violet-300">ROLLS <span id="hud-rolls" class="text-white">0/2</span></div><div class="border-l-2 border-white px-2 py-1 text-center text-[9px] text-yellow-300"><span id="hud-rack-box-label">RACK</span> <span id="hud-rack-box-count">10</span></div></div><div id="hud-frame-boxes" class="grid min-h-[42px]"></div></div></div><div class="hud-panel hud-breathe border-4 border-yellow-500 p-3 rounded-lg flex items-center gap-3 pointer-events-auto"><div class="text-center"><div class="text-[9px] text-yellow-500">PIN DOLLARS</div><div class="text-base text-yellow-300 font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-bowling-ball text-xs text-yellow-400"></i> <span id="hud-cash">0</span></div></div></div></div><div class="flex flex-col items-center justify-center flex-grow pointer-events-none"><h2 id="center-message" class="text-3xl md:text-5xl font-extrabold crt-bloom text-center drop-shadow-lg hidden">STRIKE!</h2></div><div id="control-hud-row" class="flex flex-col md:flex-row items-center justify-between w-full pointer-events-auto gap-4 mb-2"><div class="hud-panel border-4 border-gray-700 p-3 rounded-lg text-[8px] text-gray-300 flex flex-col gap-1 w-full md:w-64 max-h-[120px] overflow-y-auto"><span class="text-[10px] text-purple-400 font-bold mb-1">UPGRADES INSTALLED:</span><div id="hud-upgrades-list" class="flex flex-col gap-1">None</div></div><div class="meter-shell relative p-2 rounded-full border-4 border-yellow-500 flex items-center justify-center w-48 h-48 shrink-0"><canvas id="gauge-canvas" width="168" height="168" class="cursor-pointer rounded-full w-[168px] h-[168px]"></canvas><div id="mobile-gauge-control" class="mobile-gauge-control" role="button" tabindex="0" aria-label="Roll meter"><div class="mobile-gauge-readout"><span id="mobile-gauge-stage">SET LINE</span> <b id="mobile-gauge-value">0 DEG</b></div><div class="mobile-gauge-bar"><span class="mobile-gauge-zone mobile-gauge-zone-red-top"></span> <span class="mobile-gauge-zone mobile-gauge-zone-true"></span> <span class="mobile-gauge-zone mobile-gauge-zone-red-bottom"></span> <span id="mobile-gauge-fill" class="mobile-gauge-fill"></span> <span id="mobile-gauge-sweep" class="mobile-gauge-sweep"></span> <span id="mobile-gauge-target" class="mobile-gauge-target"></span></div><div id="mobile-gauge-hint" class="mobile-gauge-hint">Tap</div></div><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><div id="gauge-stage-label" class="text-[8px] text-gray-400 mb-0.5">PRESS SPACE</div><div id="gauge-sub-label" class="text-[9px] text-yellow-400 font-bold">AIM</div></div></div><div class="hud-panel border-4 border-gray-700 p-3 rounded-lg flex flex-col items-center justify-center gap-2 w-full md:w-64"><span id="mobile-steer-label" class="text-[8px] text-yellow-400 font-bold">POSITION / STEER (A-D OR ARROWS)</span><div class="flex gap-2 w-full"><button id="btn-steer-left" class="control-key flex-1 py-2 bg-gray-800 border-2 border-gray-600 rounded active:bg-violet-700 text-xs text-white"><span class="control-arrow">&larr;</span><span class="control-key-label">A</span></button> <button id="btn-roll-action" class="control-key flex-1 py-2 bg-red-800 border-2 border-red-600 rounded text-[8px] text-white">TAP METER</button> <button id="btn-steer-right" class="control-key flex-1 py-2 bg-gray-800 border-2 border-gray-600 rounded active:bg-violet-700 text-xs text-white"><span class="control-key-label">D</span><span class="control-arrow">&rarr;</span></button></div></div></div></div><div id="main-menu" class="pinfall-menu absolute inset-0 bg-[#0c0617]/95 flex flex-col items-center justify-center p-6 z-50 overflow-y-auto"><div class="pinfall-bg-scene" aria-hidden="true"><div class="pinfall-bg-lane"></div><div class="pinfall-bg-ball"></div><div class="pinfall-bg-pin pin-a"><svg viewBox="0 0 100 260" role="img"><path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/><path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/><path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/></svg></div><div class="pinfall-bg-pin pin-b"><svg viewBox="0 0 100 260" role="img"><path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/><path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/><path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/></svg></div><div class="pinfall-bg-pin pin-c"><svg viewBox="0 0 100 260" role="img"><path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/><path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/><path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/></svg></div></div><div class="pinfall-menu-inner arcade-menu-shell"><div class="arcade-corner corner-tl" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div><div class="arcade-corner corner-tr" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div><div class="arcade-corner corner-bl" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div><div class="arcade-corner corner-br" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div><div class="arcade-rail rail-top" aria-hidden="true"></div><div class="arcade-rail rail-bottom" aria-hidden="true"></div><div class="arcade-rail rail-left" aria-hidden="true"></div><div class="arcade-rail rail-right" aria-hidden="true"></div><header class="arcade-logo-row"><span class="logo-pin-svg" aria-hidden="true"><svg viewBox="0 0 52 92"><path d="M24 5c7 0 10 4 9 13l-2 13c-1 8 1 14 6 22 7 11 9 25 3 34-7 11-21 11-28 0-6-9-4-23 3-34 5-8 7-14 6-22l-2-13C18 9 17 5 24 5Z"/><path d="M20 25c4 3 12 3 16 0M18 36c5 3 15 3 20 0"/></svg></span><div class="pinfall-title-lockup crt-bloom" aria-label="Pinfall"><h1 class="pinfall-logo">PINFALL</h1><span class="pinfall-subtitle">Ten pins. Strange lanes.</span></div><span class="logo-pin-svg right" aria-hidden="true"><svg viewBox="0 0 52 92"><path d="M24 5c7 0 10 4 9 13l-2 13c-1 8 1 14 6 22 7 11 9 25 3 34-7 11-21 11-28 0-6-9-4-23 3-34 5-8 7-14 6-22l-2-13C18 9 17 5 24 5Z"/><path d="M20 25c4 3 12 3 16 0M18 36c5 3 15 3 20 0"/></svg></span></header><main class="arcade-main-grid"><section class="arcade-left-stack"><article class="menu-mode-card menu-mode-rogue" data-mode="rogue"><div class="mode-card-topline">Arcade Run</div><div class="mode-card-main"><div class="mode-card-icon mode-card-icon-route" aria-hidden="true"><svg viewBox="0 0 96 96"><path d="M22 68h18l16-40h18"/><circle cx="22" cy="68" r="8"/><circle cx="40" cy="68" r="8"/><circle cx="56" cy="28" r="8"/><circle cx="74" cy="28" r="8"/></svg></div><div><h3>Rogue-like Run</h3><p>Routes, shops, special pins, boss lanes.</p></div></div><button id="btn-start-game" disabled="disabled" class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-emerald-600 border-emerald-400 hover:bg-emerald-500 uppercase">Loading...</button><div id="run-slots" class="run-slots" aria-label="Saved roguelike runs"></div></article><article class="menu-mode-card menu-mode-tenpin" data-mode="tenpin"><div class="mode-card-topline">Classic Lane</div><div class="mode-card-main"><div class="mode-card-icon mode-card-icon-score" aria-hidden="true"><svg viewBox="0 0 96 96"><rect x="18" y="22" width="60" height="52"/><path d="M18 40h60M38 22v52M58 22v52"/><path d="M28 32h6M48 32h6M68 32h6M28 54h6M48 54h6M68 54h6"/></svg></div><div><h3>10-Pin Mode</h3><p>Classic scoring with optional shop twists.</p></div></div><div class="mode-card-options"><label><input id="tenpin-special-toggle" type="checkbox" checked="checked" class="accent-yellow-500"> Special shop</label> <label><input id="tenpin-full-bag-toggle" type="checkbox" checked="checked" class="accent-yellow-500"> Full bag <span class="info-tooltip-wrap" tabindex="0"><span class="info-tooltip-icon">i</span><span class="info-tooltip-text">When Full bag is on, every 10-pin shop item appears every time. When it is off, each shop shows 6 random items; rerolling the bag is still allowed.</span></span></label></div><button id="btn-start-tenpin" disabled="disabled" class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-cyan-700 border-cyan-400 hover:bg-cyan-600 uppercase">Loading...</button></article></section><section class="arcade-center-stage"><div id="menu-center-content" class="menu-center-content hidden" aria-live="polite"></div><div class="central-bowling-graphic" aria-hidden="true"><svg viewBox="0 0 520 360" role="img"><defs><linearGradient id="pinfallFlame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#facc15"/><stop offset=".45" stop-color="#f97316"/><stop offset="1" stop-color="#7f1d1d"/></linearGradient><radialGradient id="pinfallBall" cx=".38" cy=".25" r=".72"><stop offset="0" stop-color="#c084fc"/><stop offset=".45" stop-color="#7e22ce"/><stop offset="1" stop-color="#2e1065"/></radialGradient></defs><path class="burst back" d="M260 18 296 126 388 58 346 164 480 134 374 218 500 266 356 270 402 350 292 304 260 358 228 304 118 350 164 270 20 266 146 218 40 134 174 164 132 58 224 126Z"/><path class="burst front" d="M260 60 288 144 354 98 324 182 430 170 340 228 432 268 328 266 356 324 280 286 260 330 240 286 164 324 192 266 88 268 180 228 90 170 196 182 166 98 232 144Z"/><g class="hero-pins"><g transform="translate(236 20)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g><g transform="translate(137 78) rotate(-34 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g><g transform="translate(335 78) rotate(34 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g><g transform="translate(79 160) rotate(-68 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g><g transform="translate(393 160) rotate(68 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g></g><circle class="hero-ball" cx="260" cy="224" r="82"/><circle class="ball-shine" cx="224" cy="188" r="18"/><circle class="ball-hole" cx="288" cy="184" r="11"/><circle class="ball-hole" cx="314" cy="226" r="12"/><circle class="ball-hole" cx="277" cy="222" r="8"/></svg></div><div class="player-hub-panel"><div class="hub-label">Player Hub</div><button id="btn-how-to-play" class="pixel-btn hub-btn primary-hub-btn gray-cell uppercase"><i class="fa-solid fa-circle-question"></i> How To Play</button> <button id="btn-relic-shelf" class="pixel-btn hub-btn amber-cell uppercase"><i class="fa-solid fa-gem"></i> Relic Shelf</button> <button id="btn-stats-screen" class="pixel-btn hub-btn teal-cell uppercase"><i class="fa-solid fa-chart-column"></i> Stats</button> <button id="btn-open-legend-menu" class="pixel-btn hub-btn amber-cell uppercase"><i class="fa-solid fa-book-open"></i> Open Legend</button> <button id="btn-main-quit" class="native-quit-control hidden pixel-btn hub-btn red-cell uppercase"><i class="fa-solid fa-power-off"></i> Quit Game</button></div></section><aside class="daily-panel"><div class="daily-title">Daily Lineup</div><p id="daily-summary" class="daily-summary">Today&apos;s Daily Run <span class="daily-date-chip">Today</span></p><button type="button" class="daily-score-card" id="daily-score-card">Best Today: --</button> <button type="button" class="daily-review-btn debug-only" id="btn-review-dailies"><i class="fa-solid fa-calendar-days"></i> Review 30 Days</button> <button type="button" id="btn-start-daily-panel" class="pixel-btn daily-start-btn uppercase"><i class="fa-solid fa-calendar-day"></i> Start Daily Run</button><h3>Today&apos;s Route</h3><div class="daily-icon-grid map-icons"><button type="button" class="daily-icon-card route" data-daily-key="map0"><svg viewBox="0 0 64 64"><path d="M12 46h16l9-28h15"/><circle cx="12" cy="46" r="6"/><circle cx="28" cy="46" r="6"/><circle cx="37" cy="18" r="6"/><circle cx="52" cy="18" r="6"/></svg></button> <button type="button" class="daily-icon-card oil" data-daily-key="map1"><svg viewBox="0 0 64 64"><path d="M32 8c12 16 18 25 18 36 0 10-8 16-18 16s-18-6-18-16c0-11 6-20 18-36Z"/><path d="M24 44c3 5 10 7 16 2"/></svg></button> <button type="button" class="daily-icon-card split" data-daily-key="map2"><svg viewBox="0 0 64 64"><path d="M14 50 32 14l18 36"/><path d="M22 42h20"/><circle cx="14" cy="50" r="5"/><circle cx="50" cy="50" r="5"/></svg></button> <button type="button" class="daily-icon-card boss" data-daily-key="map3"><svg viewBox="0 0 64 64"><path d="m16 42 8-24 8 16 8-16 8 24Z"/><path d="M16 42h32v10H16Z"/></svg></button></div><h3>Featured Shops</h3><div class="daily-icon-grid shop-icons"><button type="button" class="daily-icon-card pins" data-daily-key="shop0"><svg viewBox="0 0 64 64"><path d="M28 8c7 0 9 5 8 12l-2 10c0 5 3 9 6 14 6 9 3 18-8 18s-14-9-8-18c3-5 6-9 6-14l-2-10c-1-7 0-12 8-12Z"/><path d="M25 24c5 3 11 3 16 0"/></svg></button> <button type="button" class="daily-icon-card shop" data-daily-key="shop1"><svg viewBox="0 0 64 64"><path d="M10 24h44l-5-12H15Z"/><path d="M14 24v28h36V24"/><path d="M22 52V36h20v16"/></svg></button> <button type="button" class="daily-icon-card bag" data-daily-key="shop2"><svg viewBox="0 0 64 64"><path d="M18 22h28l4 32H14Z"/><path d="M24 22c0-8 16-8 16 0"/><path d="M25 36h14"/></svg></button></div><h3>Event Pins</h3><div class="daily-icon-grid pin-icons"><button type="button" class="daily-icon-card medal" data-daily-key="pin0"><svg viewBox="0 0 64 64"><circle cx="32" cy="26" r="14"/><path d="M24 38 18 56l14-8 14 8-6-18"/><path d="m26 25 4 4 8-9"/></svg></button> <button type="button" class="daily-icon-card eventpin" data-daily-key="pin1"><svg viewBox="0 0 64 64"><path d="M28 8c7 0 9 5 8 12l-2 10c0 5 3 9 6 14 6 9 3 18-8 18s-14-9-8-18c3-5 6-9 6-14l-2-10c-1-7 0-12 8-12Z"/><path d="M14 22h8M42 22h8M12 40h8M44 40h8"/></svg></button> <button type="button" class="daily-icon-card pair" data-daily-key="pin2"><svg viewBox="0 0 64 64"><path d="M20 10c6 0 8 4 7 10l-2 9c0 4 3 8 5 12 5 8 2 15-10 15S5 49 10 41c2-4 5-8 5-12l-2-9c-1-6 1-10 7-10Z"/><path d="M44 10c6 0 8 4 7 10l-2 9c0 4 3 8 5 12 5 8 2 15-10 15s-15-7-10-15c2-4 5-8 5-12l-2-9c-1-6 1-10 7-10Z"/></svg></button></div></aside></main><footer class="menu-control-strip"><div>Made by <a href="https://jakedoesdev.com" target="_blank">jakedoesdev.com</a> |</div><div>Sound effects courtesy of <a href="https://zapsplat.com" target="_blank">zapsplat.com</a></div><b>v0.2.0</b></footer></div></div><div id="roguelike-run-screen" class="meta-screen absolute inset-0 z-[60] hidden overflow-y-auto p-5"><div class="meta-panel max-w-6xl mx-auto"><div class="meta-header"><div><h2>ROGUELIKE RUN</h2><p>Continue a saved route, choose a relic, or start fresh through twelve strange frames.</p></div><button id="btn-close-roguelike-run" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button></div><div class="roguelike-hub-grid"><section class="roguelike-hub-primary"><span>Selected Relic</span> <strong id="selected-relic-label">Last Frame Token</strong><p id="selected-relic-desc">Once per run, if you fail a target, you get one emergency extra roll.</p><label class="seed-entry"><span>Run Seed</span> <input id="run-seed-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Type anything, or leave blank"> <small>Optional. Any text becomes a shareable seed.</small></label><div class="roguelike-start-actions"><button id="btn-start-run-hub" class="pixel-btn w-full py-4 bg-emerald-600 border-emerald-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-bowling-ball"></i> Start New Run</button> <button id="btn-start-daily-run-hub" class="pixel-btn w-full py-4 bg-purple-800 border-purple-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-calendar-day"></i> Start Daily Run</button></div></section><section><h3>Continue Runs</h3><div id="run-slots-hub" class="run-slots" aria-label="Continue saved roguelike runs"></div></section><nav class="roguelike-hub-actions"><button id="btn-how-to-play-hub" class="pixel-btn px-5 py-3 bg-purple-800 border-purple-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-circle-question"></i> How To Play</button> <button id="btn-relic-shelf-hub" class="pixel-btn px-5 py-3 bg-[#5b3a24] border-[#f2c36b] text-[10px] font-bold uppercase"><i class="fa-solid fa-gem"></i> Relic Shelf</button> <button id="btn-stats-screen-hub" class="pixel-btn px-5 py-3 bg-cyan-800 border-cyan-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-chart-column"></i> Stats</button></nav><section id="roguelike-hub-detail" class="roguelike-hub-detail hidden" aria-live="polite"></section></div></div></div><div id="tutorial-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5"><div class="meta-panel max-w-6xl mx-auto"><div class="meta-header"><div><h2>HOW ROGUELIKE RUNS WORK</h2><p>Route the lane, beat frame targets, survive bosses, build a house style.</p></div><button id="btn-close-tutorial" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button></div><div class="tutorial-grid"><article><b>1 // Pick A Lane</b><p>Each run is 12 frames. Choose a route before each frame. Riskier lanes pay more pin dollars and change the rack.</p></article><article><b>2 // Beat The Target</b><p>Knock down enough scoring pins within your rolls. Special pins, gold pins, messy layouts, and boss rules change what “good” looks like.</p></article><article><b>3 // Shop And Reroll</b><p>Spend pin dollars between frames. Bought cards stay sold out until you reroll, and rerolls get pricier each shop visit.</p></article><article><b>4 // Boss Frames</b><p>Frames 4, 8, and 12 are boss lanes. They announce their rule changes before you bowl so the drama is readable.</p></article><article><b>5 // Relics</b><p>Relics are meta upgrades selected before a run. They bend the entire run, like a one-time extra chance when you would bust out.</p></article><article><b>6 // Saves</b><p>Choose a run slot before starting. Roguelike runs autosave to that slot at route, shop, and upgrade breaks.</p></article></div></div></div><div id="relic-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5"><div class="meta-panel max-w-6xl mx-auto"><div class="meta-header"><div><h2>RELIC SHELF</h2><p>Pick one keepsake before starting a roguelike run.</p></div><button id="btn-close-relics" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button></div><div id="relic-grid" class="relic-grid"></div></div></div><div id="stats-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5"><div class="meta-panel max-w-6xl mx-auto"><div class="meta-header"><div><h2>STATS</h2><p>Run history, 10-pin history, averages, and all-time highs.</p></div><button id="btn-close-stats" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button></div><div id="stats-grid" class="stats-grid"></div></div></div><div id="boss-intro-screen" class="boss-intro-screen absolute inset-0 z-[63] hidden p-6"><div class="boss-intro-panel"><div id="boss-intro-sigil" class="boss-intro-sigil"><i class="fa-solid fa-crown"></i></div><span>Boss Lane</span><h2 id="boss-intro-title">Split King</h2><p id="boss-intro-desc">Two royal clusters sit far apart.</p><div id="boss-intro-rule" class="boss-intro-rule">Target pressure rises.</div><button id="btn-start-boss" class="pixel-btn px-8 py-4 bg-red-700 border-red-400 text-[12px] font-bold uppercase">Face The Lane</button></div></div><div id="shop-screen" class="absolute inset-0 bg-[#090412]/98 flex flex-col items-center justify-center p-4 z-40 hidden overflow-y-auto"><div class="shop-shell max-w-6xl w-full bg-black/95 pixel-border border-purple-600 p-8 flex flex-col gap-7"><div class="shop-header flex flex-col md:flex-row md:items-center justify-between border-b border-purple-900 pb-5 gap-5"><div><h2 class="text-2xl font-bold text-purple-400 crt-bloom">FRAME CLEARED!</h2><p class="text-[13px] text-gray-400 mt-2">Upgrade your setup before the next Frame challenge starts!</p></div><div class="shop-cash-bank bg-yellow-950/60 border-2 border-yellow-500 px-5 py-3 rounded flex items-center justify-between gap-5"><span class="text-[13px] text-yellow-500 font-bold">PIN DOLLARS:</span> <span id="shop-cash-display" class="text-2xl text-yellow-400 font-bold">0</span></div></div><div id="shop-items-container" class="grid grid-cols-1 md:grid-cols-3 gap-5 overflow-y-auto pr-2"></div><div class="shop-footer flex flex-col md:flex-row justify-between items-center gap-5 border-t border-purple-900 pt-5"><div id="shop-next-goal-row" class="text-[12px] text-gray-400"><span id="shop-next-target" class="text-white font-bold text-base">20 Points</span></div><button id="btn-shop-reroll" class="pixel-btn px-8 py-4 bg-purple-700 border-purple-400 hover:bg-purple-600 text-[13px] font-bold uppercase hidden">Reroll Shop</button> <button id="btn-next-frame" class="pixel-btn px-8 py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[13px] font-bold uppercase">Launch Next Frame</button> <button id="btn-tenpin-reroll-shop" class="pixel-btn px-8 py-4 bg-cyan-700 border-cyan-400 hover:bg-cyan-600 text-[13px] font-bold uppercase hidden">Reroll Bag</button></div></div></div><div id="route-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[45] hidden overflow-y-auto"><div class="lounge-panel max-w-7xl w-full pixel-border p-8 flex flex-col gap-7"><div class="flex flex-col md:flex-row md:items-end justify-between border-b border-[#6d5944] pb-5 gap-5"><div><h2 id="route-title" class="text-2xl font-bold text-[#f2c36b]">CHOOSE A LANE</h2><p id="route-subtitle" class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Pick your next risk. Harder lanes pay better.</p></div><div class="text-[12px] text-[#f2c36b] border-2 border-[#8a6840] px-4 py-3 bg-[#2b1a0f]/80">STAGE <span id="route-stage">1</span> / FRAME <span id="route-frame">2</span> / 12</div><div id="route-seed-chip" class="seed-chip hidden">SEED <span></span></div></div><div id="route-map-container" class="route-map-board p-5"><svg id="route-map-lines" class="pointer-events-none opacity-90"></svg><div id="route-options-container"></div><div id="route-tooltip" class="route-map-tooltip hidden"><strong></strong><span></span></div></div><aside id="route-choice-panel" class="route-detail-panel"></aside></div></div><div id="event-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[46] hidden overflow-y-auto"><div class="lounge-panel max-w-4xl w-full pixel-border p-8 flex flex-col gap-6 text-center"><div class="text-[13px] text-[#f2c36b]">LANE EVENT</div><h2 id="event-title" class="text-3xl font-bold text-[#f2c36b]">EVENT</h2><p id="event-desc" class="text-[15px] text-[#cbb89c] leading-relaxed"></p><div id="event-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"></div></div></div><div id="debug-actions-screen" class="absolute inset-0 z-[70] hidden pointer-events-none"><div class="debug-action-menu pointer-events-auto"><div class="flex items-center justify-between gap-4 border-b border-[#6d5944] pb-3"><div><h2 class="text-sm text-[#f2c36b]">DEBUG ACTIONS</h2><p class="text-[9px] text-[#cbb89c] mt-2">Fast run controls for testing balance and flow.</p></div><span class="debug-action-key">O CLOSE</span></div><div class="debug-action-grid"><button data-debug-action="shop">Skip To Shop</button> <button data-debug-action="winFrame">Clear Frame</button> <button data-debug-action="gutter">Gutter / Skip Throw</button> <button data-debug-action="lose">Immediate Lose</button> <button data-debug-action="score500">Insert 500 Points</button> <button data-debug-action="cash100">Add 100 Pin Dollars</button> <button data-debug-action="route">Open Route Map</button> <button data-debug-action="freshRack">Fresh Rack</button> <button data-debug-action="dailyReview">Review Daily Runs</button></div></div></div><div id="vocab-tooltip" class="vocab-tooltip hidden"><strong></strong> <span></span></div><div id="game-over-screen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 z-50 hidden"><div class="max-w-md text-center flex flex-col items-center gap-6"><h2 class="text-3xl font-extrabold text-red-500 crt-bloom">GAME OVER</h2><p class="text-xs text-gray-400 leading-relaxed">You failed to achieve the target point score. The run is over!</p><div class="w-full bg-violet-950/40 border-2 border-violet-800 p-4 rounded text-left flex flex-col gap-2"><div class="flex justify-between text-xs text-gray-300"><span>FRAMES BEATEN:</span> <span id="final-frames" class="text-white font-bold">0</span></div><div class="flex justify-between text-xs text-gray-300"><span>FINAL FRAME LEVEL:</span> <span id="final-level" class="text-white font-bold">1</span></div><div class="flex justify-between text-xs text-gray-300"><span>TOTAL SCORE ACCUMULATED:</span> <span id="final-cash" class="text-yellow-400 font-bold">0</span></div></div><button id="btn-restart" class="pixel-btn w-full py-4 text-[10px] font-bold tracking-widest bg-red-700 border-red-500 hover:bg-red-600 uppercase">Restart Run</button></div></div><div id="pause-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 z-50 hidden"><div class="hud-panel max-w-md w-full border-4 border-violet-600 p-6 rounded-lg flex flex-col gap-5 pointer-events-auto"><div class="flex items-center justify-between border-b border-violet-900 pb-3"><h2 class="text-xl font-bold text-violet-300 crt-bloom">PAUSED</h2><span class="text-[8px] text-gray-400">ESC / P</span></div><div id="pause-seed-chip" class="seed-chip pause-seed-chip hidden">SEED <span></span></div><div class="flex flex-col gap-4 text-[9px] text-gray-300"><label class="flex flex-col gap-2"><span class="flex justify-between"><span>MASTER</span><span id="vol-master-label">80%</span></span> <input id="vol-master" type="range" min="0" max="100" value="80" class="accent-violet-500"></label> <label class="flex flex-col gap-2"><span class="flex justify-between"><span>MUSIC</span><span id="vol-music-label">18%</span></span> <input id="vol-music" type="range" min="0" max="100" value="18" class="accent-fuchsia-500"></label> <label class="flex flex-col gap-2"><span class="flex justify-between"><span>ALLEY</span><span id="vol-alley-label">30%</span></span> <input id="vol-alley" type="range" min="0" max="100" value="30" class="accent-yellow-500"></label> <label class="flex flex-col gap-2"><span class="flex justify-between"><span>EFFECTS</span><span id="vol-effects-label">85%</span></span> <input id="vol-effects" type="range" min="0" max="100" value="85" class="accent-emerald-500"></label></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2"><button id="btn-resume" class="pixel-btn py-3 text-[9px] font-bold bg-emerald-600 border-emerald-400 uppercase">Resume</button> <button id="btn-pause-restart" class="pixel-btn py-3 text-[9px] font-bold bg-red-700 border-red-500 uppercase">Restart</button> <button id="btn-pause-legend" class="pixel-btn py-3 text-[9px] font-bold bg-[#5b3a24] border-[#f2c36b] uppercase">Legend</button> <button id="btn-main-menu" class="pixel-btn py-3 text-[9px] font-bold bg-violet-700 border-violet-500 uppercase">Main Menu</button> <button id="btn-pause-quit" class="native-quit-control hidden pixel-btn py-3 text-[9px] font-bold bg-red-900 border-red-500 uppercase">Quit Game</button></div><div class="save-slots"><span>Save Roguelike Run</span> <button type="button" data-save-slot="0" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 1</button> <button type="button" data-save-slot="1" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 2</button> <button type="button" data-save-slot="2" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 3</button></div></div></div><div id="legend-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[62] hidden pointer-events-auto"><div class="lounge-panel max-w-7xl w-full max-h-[calc(100vh-2rem)] pixel-border p-8 flex flex-col gap-6 overflow-hidden"><div class="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-[#6d5944] pb-5"><div><h2 class="text-2xl font-bold text-[#f2c36b]">LEGEND</h2><p class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Discovered run knowledge, 10-pin shop rules, and special lane weirdness.</p></div><button id="btn-close-legend" class="pixel-btn px-5 py-3 bg-red-700 border-red-500 hover:bg-red-600 text-[11px] font-bold uppercase">Close</button></div><div id="legend-tabs" class="shrink-0 grid grid-cols-2 md:grid-cols-5 gap-3"></div><div class="legend-scroll"><div id="legend-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div></div></div></div><div id="alert-box" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white border-4 border-black px-6 py-2 text-[9px] rounded z-50 opacity-0 pointer-events-none transition-opacity duration-300">Notification text</div><div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div><script type="module" src="./game.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pinfall</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Retro Style -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
+    <link rel="stylesheet" href="./styles/base.css">
+    <link rel="stylesheet" href="./styles/ui.css">
+    <link rel="stylesheet" href="./styles/debug.css">
+    <link rel="stylesheet" href="./styles/presentation.css">
+</head>
+<body class="relative w-screen h-screen flex items-center justify-center text-white">
+
+    <section id="studio-splash" class="studio-splash" aria-label="Goose Games">
+        <img src="./src/assets/branding/goose-games-logo.png" alt="Goose Games">
+    </section>
+
+    <!-- Scanline effect for CRT aesthetic -->
+    <div class="scanlines"></div>
+    <div id="mood-overlay" class="fixed inset-0 z-[9] pointer-events-none hidden"></div>
+
+    <!-- MAIN GAME CANVAS CONTAINER -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full bg-[#0b0615]"></div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-screen" class="absolute inset-0 bg-[#07030f] flex flex-col items-center justify-center p-6 z-[70]">
+        <div class="flex flex-col items-center gap-7 text-center">
+            <div class="relative loading-orbit flex items-center justify-center">
+                <i class="fa-solid fa-bowling-ball text-4xl text-yellow-300 absolute"></i>
+            </div>
+            <div class="flex flex-col gap-3 max-w-lg">
+                <div class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 crt-bloom">PINFALL</div>
+                <div id="loading-status" class="text-[9px] text-violet-200 uppercase tracking-widest">WAXING LANES...</div>
+                <div class="h-3 border-2 border-violet-700 bg-black overflow-hidden">
+                    <div id="loading-bar" class="h-full bg-gradient-to-r from-yellow-300 via-pink-500 to-cyan-300 transition-all duration-300" style="width: 6%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-debug-mode" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto text-[8px] px-3 py-2 border-2 border-cyan-400 bg-black/70 text-cyan-200">
+        DEBUG F1
+    </button>
+
+    <div id="practice-toolbar" hidden>
+        <span class="practice-label">FREE PLAY</span>
+        <label for="practice-rack" class="sr-only">Rack</label>
+        <select hidden id="practice-rack" aria-label="Practice rack size">
+            <option value="1">10 pins</option><option value="5">36 pins</option>
+            <option value="10">91 pins</option><option value="12">120 pins</option>
+        </select>
+        <div class="practice-racks" role="group" aria-label="Rack size">
+            <button data-practice-frame="1" aria-label="10 pins" aria-pressed="true">10</button>
+            <button data-practice-frame="5" aria-label="36 pins" aria-pressed="false">36</button>
+            <button data-practice-frame="10" aria-label="91 pins" aria-pressed="false">91</button>
+            <button data-practice-frame="12" aria-label="120 pins" aria-pressed="false">120</button>
+        </div>
+        <label class="practice-chaos"><input id="practice-specials" type="checkbox" checked> CHAOS</label>
+        <button id="practice-reset">Re-rack</button>
+        <button id="practice-exit">Exit</button>
+    </div>
+
+    <div id="release-feedback" role="status" aria-live="polite" hidden></div>
+
+    <div id="tenpin-scoreboard-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-4 z-[43] hidden pointer-events-auto">
+        <div class="max-w-7xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5">
+            <div class="flex items-center justify-between gap-5 border-b border-yellow-900 pb-4">
+                <h2 class="text-2xl font-bold text-yellow-300 crt-bloom">10-PIN SCOREBOARD</h2>
+                <button id="btn-close-scoreboard" class="pixel-btn px-5 py-3 bg-red-700 border-red-500 hover:bg-red-600 text-[11px] font-bold uppercase">Close</button>
+            </div>
+            <div id="tenpin-scoreboard-grid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
+        </div>
+    </div>
+
+    <div id="tenpin-rack-screen" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-4 z-[44] hidden pointer-events-auto">
+        <div class="max-w-5xl w-full bg-black/95 pixel-border border-yellow-500 p-7 flex flex-col gap-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-yellow-900 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-yellow-300 crt-bloom">RACK IT YOURSELF</h2>
+                    <p class="text-[12px] text-gray-400 mt-2">Place every bought special pin into the traditional 10-pin triangle.</p>
+                </div>
+                <div id="tenpin-rack-status" class="text-[12px] text-emerald-300 uppercase"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-7 items-center">
+                <div id="tenpin-rack-board" class="relative mx-auto w-full max-w-xl aspect-[1.2/1] border-2 border-yellow-700 bg-black/50"></div>
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <div class="text-[12px] text-gray-400 uppercase mb-3">Bought Pins</div>
+                        <div id="tenpin-rack-palette" class="flex flex-col gap-3"></div>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <button id="btn-clear-manual-rack" class="pixel-btn py-3 bg-gray-700 border-gray-500 hover:bg-gray-600 text-[11px] font-bold uppercase">Clear Placement</button>
+                        <button id="btn-confirm-manual-rack" class="pixel-btn py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[12px] font-bold uppercase">Launch Frame</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI OVERLAY: HUD & CONTROLS -->
+    <div id="game-hud" class="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none z-20">
+        <!-- Top Stats Bar -->
+        <div class="flex justify-between items-start w-full gap-4">
+            <!-- Frame and Score Tracker -->
+            <div id="score-hud-panel" class="hud-panel hud-breathe border-4 p-3 rounded-lg flex flex-col gap-2 pointer-events-auto max-w-[320px] cursor-pointer">
+                <div class="flex justify-between gap-4 text-[10px] text-white">
+                    <span><span id="hud-frame-label">ROUND</span> <span id="hud-frame" class="text-yellow-300 text-sm">1</span></span>
+                    <span><span id="hud-score-label">PINS</span> <span id="hud-score" class="text-emerald-300 text-sm">0</span><span id="hud-target-separator" class="text-gray-500">/</span><span id="hud-target" class="text-yellow-300 text-sm">8</span></span>
+                    <span id="hud-rack-pill" class="hud-rack-pill"><span id="hud-rack-label">RACK</span> <span id="hud-rack-count">10</span></span>
+                </div>
+                <div class="border-2 border-white bg-black">
+                    <div class="grid grid-cols-[1fr_56px] border-b-2 border-white">
+                        <div class="px-2 py-1 text-[9px] text-violet-300">ROLLS <span id="hud-rolls" class="text-white">0/2</span></div>
+                        <div class="border-l-2 border-white px-2 py-1 text-center text-[9px] text-yellow-300"><span id="hud-rack-box-label">RACK</span> <span id="hud-rack-box-count">10</span></div>
+                    </div>
+                    <div id="hud-frame-boxes" class="grid min-h-[42px]"></div>
+                </div>
+            </div>
+
+            <!-- Pin / Cash Bank -->
+            <div class="hud-panel hud-breathe border-4 border-yellow-500 p-3 rounded-lg flex items-center gap-3 pointer-events-auto">
+                <div class="text-center">
+                    <div class="text-[9px] text-yellow-500">PIN DOLLARS</div>
+                    <div class="text-base text-yellow-300 font-bold flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bowling-ball text-xs text-yellow-400"></i>
+                        <span id="hud-cash">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Notification Message -->
+        <div class="flex flex-col items-center justify-center flex-grow pointer-events-none">
+            <h2 id="center-message" class="text-3xl md:text-5xl font-extrabold crt-bloom text-center drop-shadow-lg hidden">STRIKE!</h2>
+        </div>
+
+        <!-- Bottom Controls / Gauge Layout -->
+        <div id="control-hud-row" class="flex flex-col md:flex-row items-center justify-between w-full pointer-events-auto gap-4 mb-2">
+            <!-- Active Upgrades Info (Left) -->
+            <div class="hud-panel border-4 border-gray-700 p-3 rounded-lg text-[8px] text-gray-300 flex flex-col gap-1 w-full md:w-64 max-h-[120px] overflow-y-auto">
+                <span class="text-[10px] text-purple-400 font-bold mb-1">UPGRADES INSTALLED:</span>
+                <div id="hud-upgrades-list" class="flex flex-col gap-1">None</div>
+            </div>
+
+            <!-- Circular arcade shot meter -->
+            <div id="meter-caption" role="status" aria-live="polite">SET YOUR LINE</div>
+            <div class="meter-shell relative p-2 rounded-full border-4 border-yellow-500 flex items-center justify-center w-48 h-48 shrink-0">
+                <canvas role="button" tabindex="0" aria-label="Bowling meter: set power, then release" aria-describedby="meter-caption" id="gauge-canvas" width="168" height="168" class="cursor-pointer rounded-full w-[168px] h-[168px]"></canvas>
+                <div id="mobile-gauge-control" class="mobile-gauge-control" role="button" tabindex="0" aria-label="Roll meter">
+                    <div class="mobile-gauge-readout">
+                        <span id="mobile-gauge-stage">SET LINE</span>
+                        <b id="mobile-gauge-value">0 DEG</b>
+                    </div>
+                    <div class="mobile-gauge-bar">
+                        <span class="mobile-gauge-zone mobile-gauge-zone-red-top"></span>
+                        <span class="mobile-gauge-zone mobile-gauge-zone-true"></span>
+                        <span class="mobile-gauge-zone mobile-gauge-zone-red-bottom"></span>
+                        <span id="mobile-gauge-fill" class="mobile-gauge-fill"></span>
+                        <span id="mobile-gauge-sweep" class="mobile-gauge-sweep"></span>
+                        <span id="mobile-gauge-target" class="mobile-gauge-target"></span>
+                    </div>
+                    <div id="mobile-gauge-hint" class="mobile-gauge-hint">Tap</div>
+                </div>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div id="gauge-stage-label" class="text-[8px] text-gray-400 mb-0.5">PRESS SPACE</div>
+                    <div id="gauge-sub-label" class="text-[9px] text-yellow-400 font-bold">AIM</div>
+                </div>
+            </div>
+
+            <!-- Steer Indicator / Mobile controls (Right) -->
+            <div class="hud-panel border-4 border-gray-700 p-3 rounded-lg flex flex-col items-center justify-center gap-2 w-full md:w-64">
+                <span id="mobile-steer-label" class="text-[8px] text-yellow-400 font-bold">MOVE / STEER</span>
+                <div class="flex gap-2 w-full">
+                    <button id="btn-steer-left" class="control-key flex-1 py-2 bg-gray-800 border-2 border-gray-600 rounded active:bg-violet-700 text-xs text-white"><span class="control-arrow">&larr;</span><span class="control-key-label">A</span></button>
+                    <button id="btn-roll-action" class="control-key flex-1 py-2 bg-red-800 border-2 border-red-600 rounded text-[8px] text-white">TAP METER</button>
+                    <button id="btn-steer-right" class="control-key flex-1 py-2 bg-gray-800 border-2 border-gray-600 rounded active:bg-violet-700 text-xs text-white"><span class="control-key-label">D</span><span class="control-arrow">&rarr;</span></button>
+                </div>
+                <div class="aim-controls">
+                    <button id="btn-aim-left" aria-label="Aim left">Q <span>↖</span></button>
+                    <span>AIM</span>
+                    <button id="btn-aim-right" aria-label="Aim right"><span>↗</span> E</button>
+                </div>
+                <span class="meter-key-hint">SPACE · TAP · DRAG TO AIM</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="pinfall-menu absolute inset-0 bg-[#0c0617]/95 flex flex-col items-center justify-center p-6 z-50 overflow-y-auto">
+        <div class="pinfall-bg-scene" aria-hidden="true">
+            <div class="pinfall-bg-lane"></div>
+            <div class="pinfall-bg-ball"></div>
+            <div class="pinfall-bg-pin pin-a">
+                <svg viewBox="0 0 100 260" role="img">
+                    <path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/>
+                    <path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/>
+                    <path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/>
+                </svg>
+            </div>
+            <div class="pinfall-bg-pin pin-b">
+                <svg viewBox="0 0 100 260" role="img">
+                    <path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/>
+                    <path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/>
+                    <path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/>
+                </svg>
+            </div>
+            <div class="pinfall-bg-pin pin-c">
+                <svg viewBox="0 0 100 260" role="img">
+                    <path class="pin-body" d="M50 6c17 0 26 12 22 36l-5 31c-2 13 0 29 8 46l16 34c15 33 2 80-41 80S-6 186 9 153l16-34c8-17 10-33 8-46l-5-31C24 18 33 6 50 6Z"/>
+                    <path class="pin-band" d="M30 58c13 8 27 8 40 0l-4 28c-10 7-22 7-32 0Z"/>
+                    <path class="pin-shine" d="M43 20c-10 15-10 42-4 69 4 21 0 44-9 65-8 20-8 41 2 55"/>
+                </svg>
+            </div>
+        </div>
+        <div class="pinfall-menu-inner arcade-menu-shell">
+            <div class="arcade-corner corner-tl" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div>
+            <div class="arcade-corner corner-tr" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div>
+            <div class="arcade-corner corner-bl" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div>
+            <div class="arcade-corner corner-br" aria-hidden="true"><svg viewBox="0 0 42 42"><rect x="3" y="3" width="36" height="36"/><path d="M11 9v24M21 9v24M31 9v24"/><path d="M8 16h26"/></svg></div>
+            <div class="arcade-rail rail-top" aria-hidden="true"></div>
+            <div class="arcade-rail rail-bottom" aria-hidden="true"></div>
+            <div class="arcade-rail rail-left" aria-hidden="true"></div>
+            <div class="arcade-rail rail-right" aria-hidden="true"></div>
+
+            <header class="arcade-logo-row">
+                <span class="logo-pin-svg" aria-hidden="true"><svg viewBox="0 0 52 92"><path d="M24 5c7 0 10 4 9 13l-2 13c-1 8 1 14 6 22 7 11 9 25 3 34-7 11-21 11-28 0-6-9-4-23 3-34 5-8 7-14 6-22l-2-13C18 9 17 5 24 5Z"/><path d="M20 25c4 3 12 3 16 0M18 36c5 3 15 3 20 0"/></svg></span>
+                <div class="pinfall-title-lockup crt-bloom" aria-label="Pinfall">
+                    <h1 class="pinfall-logo">PINFALL</h1>
+                    <span class="pinfall-subtitle">Ten pins. Strange lanes.</span>
+                </div>
+                <span class="logo-pin-svg right" aria-hidden="true"><svg viewBox="0 0 52 92"><path d="M24 5c7 0 10 4 9 13l-2 13c-1 8 1 14 6 22 7 11 9 25 3 34-7 11-21 11-28 0-6-9-4-23 3-34 5-8 7-14 6-22l-2-13C18 9 17 5 24 5Z"/><path d="M20 25c4 3 12 3 16 0M18 36c5 3 15 3 20 0"/></svg></span>
+            </header>
+
+            <main class="arcade-main-grid">
+                <section class="arcade-left-stack">
+                    <article class="menu-mode-card menu-mode-rogue" data-mode="rogue">
+                        <div class="mode-card-topline">Arcade Run</div>
+                        <div class="mode-card-main">
+                            <div class="mode-card-icon mode-card-icon-route" aria-hidden="true"><svg viewBox="0 0 96 96"><path d="M22 68h18l16-40h18"/><circle cx="22" cy="68" r="8"/><circle cx="40" cy="68" r="8"/><circle cx="56" cy="28" r="8"/><circle cx="74" cy="28" r="8"/></svg></div>
+                            <div><h3>Rogue-like Run</h3><p>Routes, shops, special pins, boss lanes.</p></div>
+                        </div>
+                        <button id="btn-practice-lane" class="practice-menu-button"><span>PLAY THE LANE</span><small>Free play · 10 to 120 pins</small></button>
+                    <button id="btn-start-game" disabled class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-emerald-600 border-emerald-400 hover:bg-emerald-500 uppercase">Loading...</button>
+                        <div id="run-slots" class="run-slots" aria-label="Saved roguelike runs"></div>
+                    </article>
+                    <article class="menu-mode-card menu-mode-tenpin" data-mode="tenpin">
+                        <div class="mode-card-topline">Classic Lane</div>
+                        <div class="mode-card-main">
+                            <div class="mode-card-icon mode-card-icon-score" aria-hidden="true"><svg viewBox="0 0 96 96"><rect x="18" y="22" width="60" height="52"/><path d="M18 40h60M38 22v52M58 22v52"/><path d="M28 32h6M48 32h6M68 32h6M28 54h6M48 54h6M68 54h6"/></svg></div>
+                            <div><h3>10-Pin Mode</h3><p>Classic scoring with optional shop twists.</p></div>
+                        </div>
+                        <div class="mode-card-options">
+                            <label><input id="tenpin-special-toggle" type="checkbox" checked class="accent-yellow-500"> Special shop</label>
+                            <label><input id="tenpin-full-bag-toggle" type="checkbox" checked class="accent-yellow-500"> Full bag <span class="info-tooltip-wrap" tabindex="0"><span class="info-tooltip-icon">i</span><span class="info-tooltip-text">When Full bag is on, every 10-pin shop item appears every time. When it is off, each shop shows 6 random items; rerolling the bag is still allowed.</span></span></label>
+                        </div>
+                        <button id="btn-start-tenpin" disabled class="pixel-btn pixel-btn-disabled py-4 text-xs font-bold tracking-widest bg-cyan-700 border-cyan-400 hover:bg-cyan-600 uppercase">Loading...</button>
+                    </article>
+                </section>
+
+                <section class="arcade-center-stage">
+                    <div id="menu-center-content" class="menu-center-content hidden" aria-live="polite"></div>
+                    <div class="central-bowling-graphic" aria-hidden="true">
+                        <svg viewBox="0 0 520 360" role="img">
+                            <defs>
+                                <linearGradient id="pinfallFlame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#facc15"/><stop offset=".45" stop-color="#f97316"/><stop offset="1" stop-color="#7f1d1d"/></linearGradient>
+                                <radialGradient id="pinfallBall" cx=".38" cy=".25" r=".72"><stop offset="0" stop-color="#c084fc"/><stop offset=".45" stop-color="#7e22ce"/><stop offset="1" stop-color="#2e1065"/></radialGradient>
+                            </defs>
+                            <path class="burst back" d="M260 18 296 126 388 58 346 164 480 134 374 218 500 266 356 270 402 350 292 304 260 358 228 304 118 350 164 270 20 266 146 218 40 134 174 164 132 58 224 126Z"/>
+                            <path class="burst front" d="M260 60 288 144 354 98 324 182 430 170 340 228 432 268 328 266 356 324 280 286 260 330 240 286 164 324 192 266 88 268 180 228 90 170 196 182 166 98 232 144Z"/>
+                            <g class="hero-pins">
+                                <g transform="translate(236 20)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g>
+                                <g transform="translate(137 78) rotate(-34 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g>
+                                <g transform="translate(335 78) rotate(34 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g>
+                                <g transform="translate(79 160) rotate(-68 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g>
+                                <g transform="translate(393 160) rotate(68 24 70)"><path d="M24 0c13 0 17 8 15 23l-4 28c-1 12 4 21 12 33 14 22 10 58-23 58S-13 106 1 84c8-12 13-21 12-33L9 23C7 8 11 0 24 0Z"/><path d="M10 36c9 6 19 6 28 0M9 49c10 6 20 6 30 0"/></g>
+                            </g>
+                            <circle class="hero-ball" cx="260" cy="224" r="82"/>
+                            <circle class="ball-shine" cx="224" cy="188" r="18"/><circle class="ball-hole" cx="288" cy="184" r="11"/><circle class="ball-hole" cx="314" cy="226" r="12"/><circle class="ball-hole" cx="277" cy="222" r="8"/>
+                        </svg>
+                    </div>
+                    <div class="player-hub-panel">
+                        <div class="hub-label">Player Hub</div>
+                        <button id="btn-how-to-play" class="pixel-btn hub-btn primary-hub-btn gray-cell uppercase"><i class="fa-solid fa-circle-question"></i> How To Play</button>
+                        <button id="btn-relic-shelf" class="pixel-btn hub-btn amber-cell uppercase"><i class="fa-solid fa-gem"></i> Relic Shelf</button>
+                        <button id="btn-stats-screen" class="pixel-btn hub-btn teal-cell uppercase"><i class="fa-solid fa-chart-column"></i> Stats</button>
+                        <button id="btn-open-legend-menu" class="pixel-btn hub-btn amber-cell uppercase"><i class="fa-solid fa-book-open"></i> Open Legend</button>
+                        <button id="btn-main-quit" class="native-quit-control hidden pixel-btn hub-btn red-cell uppercase"><i class="fa-solid fa-power-off"></i> Quit Game</button>
+                    </div>
+                </section>
+
+                <aside class="daily-panel">
+                    <div class="daily-title">Daily Lineup</div>
+                    <p id="daily-summary" class="daily-summary">Today&apos;s Daily Run <span class="daily-date-chip">Today</span></p>
+                    <button type="button" class="daily-score-card" id="daily-score-card">Best Today: --</button>
+                    <button type="button" class="daily-review-btn debug-only" id="btn-review-dailies"><i class="fa-solid fa-calendar-days"></i> Review 30 Days</button>
+                    <button type="button" id="btn-start-daily-panel" class="pixel-btn daily-start-btn uppercase"><i class="fa-solid fa-calendar-day"></i> Start Daily Run</button>
+                    <h3>Today&apos;s Route</h3>
+                    <div class="daily-icon-grid map-icons">
+                        <button type="button" class="daily-icon-card route" data-daily-key="map0"><svg viewBox="0 0 64 64"><path d="M12 46h16l9-28h15"/><circle cx="12" cy="46" r="6"/><circle cx="28" cy="46" r="6"/><circle cx="37" cy="18" r="6"/><circle cx="52" cy="18" r="6"/></svg></button>
+                        <button type="button" class="daily-icon-card oil" data-daily-key="map1"><svg viewBox="0 0 64 64"><path d="M32 8c12 16 18 25 18 36 0 10-8 16-18 16s-18-6-18-16c0-11 6-20 18-36Z"/><path d="M24 44c3 5 10 7 16 2"/></svg></button>
+                        <button type="button" class="daily-icon-card split" data-daily-key="map2"><svg viewBox="0 0 64 64"><path d="M14 50 32 14l18 36"/><path d="M22 42h20"/><circle cx="14" cy="50" r="5"/><circle cx="50" cy="50" r="5"/></svg></button>
+                        <button type="button" class="daily-icon-card boss" data-daily-key="map3"><svg viewBox="0 0 64 64"><path d="m16 42 8-24 8 16 8-16 8 24Z"/><path d="M16 42h32v10H16Z"/></svg></button>
+                    </div>
+                    <h3>Featured Shops</h3>
+                    <div class="daily-icon-grid shop-icons">
+                        <button type="button" class="daily-icon-card pins" data-daily-key="shop0"><svg viewBox="0 0 64 64"><path d="M28 8c7 0 9 5 8 12l-2 10c0 5 3 9 6 14 6 9 3 18-8 18s-14-9-8-18c3-5 6-9 6-14l-2-10c-1-7 0-12 8-12Z"/><path d="M25 24c5 3 11 3 16 0"/></svg></button>
+                        <button type="button" class="daily-icon-card shop" data-daily-key="shop1"><svg viewBox="0 0 64 64"><path d="M10 24h44l-5-12H15Z"/><path d="M14 24v28h36V24"/><path d="M22 52V36h20v16"/></svg></button>
+                        <button type="button" class="daily-icon-card bag" data-daily-key="shop2"><svg viewBox="0 0 64 64"><path d="M18 22h28l4 32H14Z"/><path d="M24 22c0-8 16-8 16 0"/><path d="M25 36h14"/></svg></button>
+                    </div>
+                    <h3>Event Pins</h3>
+                    <div class="daily-icon-grid pin-icons">
+                        <button type="button" class="daily-icon-card medal" data-daily-key="pin0"><svg viewBox="0 0 64 64"><circle cx="32" cy="26" r="14"/><path d="M24 38 18 56l14-8 14 8-6-18"/><path d="m26 25 4 4 8-9"/></svg></button>
+                        <button type="button" class="daily-icon-card eventpin" data-daily-key="pin1"><svg viewBox="0 0 64 64"><path d="M28 8c7 0 9 5 8 12l-2 10c0 5 3 9 6 14 6 9 3 18-8 18s-14-9-8-18c3-5 6-9 6-14l-2-10c-1-7 0-12 8-12Z"/><path d="M14 22h8M42 22h8M12 40h8M44 40h8"/></svg></button>
+                        <button type="button" class="daily-icon-card pair" data-daily-key="pin2"><svg viewBox="0 0 64 64"><path d="M20 10c6 0 8 4 7 10l-2 9c0 4 3 8 5 12 5 8 2 15-10 15S5 49 10 41c2-4 5-8 5-12l-2-9c-1-6 1-10 7-10Z"/><path d="M44 10c6 0 8 4 7 10l-2 9c0 4 3 8 5 12 5 8 2 15-10 15s-15-7-10-15c2-4 5-8 5-12l-2-9c-1-6 1-10 7-10Z"/></svg></button>
+                    </div>
+                </aside>
+            </main>
+
+            <footer class="menu-control-strip">
+                <div>Made by <a href="https://jakedoesdev.com" target="_blank">jakedoesdev.com</a> | </div>
+                <div>Sound effects courtesy of <a href="https://zapsplat.com" target="_blank">zapsplat.com</a></div>
+                <b>v0.2.0</b>
+            </footer>
+        </div>
+    </div>
+
+    <div id="roguelike-run-screen" class="meta-screen absolute inset-0 z-[60] hidden overflow-y-auto p-5">
+        <div class="meta-panel max-w-6xl mx-auto">
+            <div class="meta-header">
+                <div><h2>ROGUELIKE RUN</h2><p>Continue a saved route, choose a relic, or start fresh through twelve strange frames.</p></div>
+                <button id="btn-close-roguelike-run" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
+            </div>
+            <div class="roguelike-hub-grid">
+                <section class="roguelike-hub-primary">
+                    <span>Selected Relic</span>
+                    <strong id="selected-relic-label">Last Frame Token</strong>
+                    <p id="selected-relic-desc">Once per run, if you fail a target, you get one emergency extra roll.</p>
+                    <label class="seed-entry">
+                        <span>Run Seed</span>
+                        <input id="run-seed-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Type anything, or leave blank">
+                        <small>Optional. Any text becomes a shareable seed.</small>
+                    </label>
+                    <div class="roguelike-start-actions">
+                        <button id="btn-start-run-hub" class="pixel-btn w-full py-4 bg-emerald-600 border-emerald-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-bowling-ball"></i> Start New Run</button>
+                        <button id="btn-start-daily-run-hub" class="pixel-btn w-full py-4 bg-purple-800 border-purple-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-calendar-day"></i> Start Daily Run</button>
+                    </div>
+                </section>
+                <section>
+                    <h3>Continue Runs</h3>
+                    <div id="run-slots-hub" class="run-slots" aria-label="Continue saved roguelike runs"></div>
+                </section>
+                <nav class="roguelike-hub-actions">
+                    <button id="btn-how-to-play-hub" class="pixel-btn px-5 py-3 bg-purple-800 border-purple-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-circle-question"></i> How To Play</button>
+                    <button id="btn-relic-shelf-hub" class="pixel-btn px-5 py-3 bg-[#5b3a24] border-[#f2c36b] text-[10px] font-bold uppercase"><i class="fa-solid fa-gem"></i> Relic Shelf</button>
+                    <button id="btn-stats-screen-hub" class="pixel-btn px-5 py-3 bg-cyan-800 border-cyan-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-chart-column"></i> Stats</button>
+                </nav>
+                <section id="roguelike-hub-detail" class="roguelike-hub-detail hidden" aria-live="polite"></section>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutorial-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5">
+        <div class="meta-panel max-w-6xl mx-auto">
+            <div class="meta-header">
+                <div><h2>HOW ROGUELIKE RUNS WORK</h2><p>Route the lane, beat frame targets, survive bosses, build a house style.</p></div>
+                <button id="btn-close-tutorial" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
+            </div>
+            <div class="tutorial-grid">
+                <article><b>1 // Pick A Lane</b><p>Each run is 12 frames. Choose a route before each frame. Riskier lanes pay more pin dollars and change the rack.</p></article>
+                <article><b>2 // Beat The Target</b><p>Knock down enough scoring pins within your rolls. Special pins, gold pins, messy layouts, and boss rules change what “good” looks like.</p></article>
+                <article><b>3 // Shop And Reroll</b><p>Spend pin dollars between frames. Bought cards stay sold out until you reroll, and rerolls get pricier each shop visit.</p></article>
+                <article><b>4 // Boss Frames</b><p>Frames 4, 8, and 12 are boss lanes. They announce their rule changes before you bowl so the drama is readable.</p></article>
+                <article><b>5 // Relics</b><p>Relics are meta upgrades selected before a run. They bend the entire run, like a one-time extra chance when you would bust out.</p></article>
+                <article><b>6 // Saves</b><p>Choose a run slot before starting. Roguelike runs autosave to that slot at route, shop, and upgrade breaks.</p></article>
+            </div>
+        </div>
+    </div>
+
+    <div id="relic-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5">
+        <div class="meta-panel max-w-6xl mx-auto">
+            <div class="meta-header">
+                <div><h2>RELIC SHELF</h2><p>Pick one keepsake before starting a roguelike run.</p></div>
+                <button id="btn-close-relics" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
+            </div>
+            <div id="relic-grid" class="relic-grid"></div>
+        </div>
+    </div>
+
+    <div id="stats-screen" class="meta-screen absolute inset-0 z-[61] hidden overflow-y-auto p-5">
+        <div class="meta-panel max-w-6xl mx-auto">
+            <div class="meta-header">
+                <div><h2>STATS</h2><p>Run history, 10-pin history, averages, and all-time highs.</p></div>
+                <button id="btn-close-stats" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
+            </div>
+            <div id="stats-grid" class="stats-grid"></div>
+        </div>
+    </div>
+
+    <div id="boss-intro-screen" class="boss-intro-screen absolute inset-0 z-[63] hidden p-6">
+        <div class="boss-intro-panel">
+            <div id="boss-intro-sigil" class="boss-intro-sigil"><i class="fa-solid fa-crown"></i></div>
+            <span>Boss Lane</span>
+            <h2 id="boss-intro-title">Split King</h2>
+            <p id="boss-intro-desc">Two royal clusters sit far apart.</p>
+            <div id="boss-intro-rule" class="boss-intro-rule">Target pressure rises.</div>
+            <button id="btn-start-boss" class="pixel-btn px-8 py-4 bg-red-700 border-red-400 text-[12px] font-bold uppercase">Face The Lane</button>
+        </div>
+    </div>
+
+    <!-- ROGUELIKE SHOP OVERLAY (Triggers between frames) -->
+    <div id="shop-screen" class="absolute inset-0 bg-[#090412]/98 flex flex-col items-center justify-center p-4 z-40 hidden overflow-y-auto">
+        <div class="shop-shell max-w-6xl w-full bg-black/95 pixel-border border-purple-600 p-8 flex flex-col gap-7">
+            <div class="shop-header flex flex-col md:flex-row md:items-center justify-between border-b border-purple-900 pb-5 gap-5">
+                <div>
+                    <h2 class="text-2xl font-bold text-purple-400 crt-bloom">FRAME CLEARED!</h2>
+                    <p class="text-[13px] text-gray-400 mt-2">Upgrade your setup before the next Frame challenge starts!</p>
+                </div>
+                <div class="shop-cash-bank bg-yellow-950/60 border-2 border-yellow-500 px-5 py-3 rounded flex items-center justify-between gap-5">
+                    <span class="text-[13px] text-yellow-500 font-bold">PIN DOLLARS:</span>
+                    <span id="shop-cash-display" class="text-2xl text-yellow-400 font-bold">0</span>
+                </div>
+            </div>
+
+            <!-- Grid of shop options -->
+            <div id="shop-items-container" class="grid grid-cols-1 md:grid-cols-3 gap-5 overflow-y-auto pr-2">
+                <!-- Shop items generated dynamically -->
+            </div>
+
+            <div class="shop-footer flex flex-col md:flex-row justify-between items-center gap-5 border-t border-purple-900 pt-5">
+                <div id="shop-next-goal-row" class="text-[12px] text-gray-400">
+                   <span id="shop-next-target" class="text-white font-bold text-base">20 Points</span>
+                </div>
+                <button id="btn-shop-reroll" class="pixel-btn px-8 py-4 bg-purple-700 border-purple-400 hover:bg-purple-600 text-[13px] font-bold uppercase hidden">
+                    Reroll Shop
+                </button>
+                <button id="btn-next-frame" class="pixel-btn px-8 py-4 bg-emerald-600 border-emerald-400 hover:bg-emerald-500 text-[13px] font-bold uppercase">
+                    Launch Next Frame
+                </button>
+                <button id="btn-tenpin-reroll-shop" class="pixel-btn px-8 py-4 bg-cyan-700 border-cyan-400 hover:bg-cyan-600 text-[13px] font-bold uppercase hidden">
+                    Reroll Bag
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROUTE MAP OVERLAY -->
+    <div id="route-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[45] hidden overflow-y-auto">
+        <div class="lounge-panel max-w-7xl w-full pixel-border p-8 flex flex-col gap-7">
+            <div class="flex flex-col md:flex-row md:items-end justify-between border-b border-[#6d5944] pb-5 gap-5">
+                <div>
+                    <h2 id="route-title" class="text-2xl font-bold text-[#f2c36b]">CHOOSE A LANE</h2>
+                    <p id="route-subtitle" class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Pick your next risk. Harder lanes pay better.</p>
+                </div>
+                <div class="text-[12px] text-[#f2c36b] border-2 border-[#8a6840] px-4 py-3 bg-[#2b1a0f]/80">
+                    STAGE <span id="route-stage">1</span> / FRAME <span id="route-frame">2</span> / 12
+                </div>
+                <div id="route-seed-chip" class="seed-chip hidden">SEED <span></span></div>
+            </div>
+            <div id="route-map-container" class="route-map-board p-5">
+                <svg id="route-map-lines" class="pointer-events-none opacity-90"></svg>
+                <div id="route-options-container"></div>
+                <div id="route-tooltip" class="route-map-tooltip hidden"><strong></strong><span></span></div>
+            </div>
+            <aside id="route-choice-panel" class="route-detail-panel"></aside>
+        </div>
+    </div>
+
+    <!-- EVENT OVERLAY -->
+    <div id="event-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[46] hidden overflow-y-auto">
+        <div class="lounge-panel max-w-4xl w-full pixel-border p-8 flex flex-col gap-6 text-center">
+            <div class="text-[13px] text-[#f2c36b]">LANE EVENT</div>
+            <h2 id="event-title" class="text-3xl font-bold text-[#f2c36b]">EVENT</h2>
+            <p id="event-desc" class="text-[15px] text-[#cbb89c] leading-relaxed"></p>
+            <div id="event-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"></div>
+        </div>
+    </div>
+
+    <!-- DEBUG ACTIONS OVERLAY -->
+    <div id="debug-actions-screen" class="absolute inset-0 z-[70] hidden pointer-events-none">
+        <div class="debug-action-menu pointer-events-auto">
+            <div class="flex items-center justify-between gap-4 border-b border-[#6d5944] pb-3">
+                <div>
+                    <h2 class="text-sm text-[#f2c36b]">DEBUG ACTIONS</h2>
+                    <p class="text-[9px] text-[#cbb89c] mt-2">Fast run controls for testing balance and flow.</p>
+                </div>
+                <span class="debug-action-key">O CLOSE</span>
+            </div>
+            <div class="debug-action-grid">
+                <button data-debug-action="shop">Skip To Shop</button>
+                <button data-debug-action="winFrame">Clear Frame</button>
+                <button data-debug-action="pocketShot">Clean Center Shot</button>
+                <button data-debug-action="gutter">Gutter / Skip Throw</button>
+                <button data-debug-action="lose">Immediate Lose</button>
+                <button data-debug-action="score500">Insert 500 Points</button>
+                <button data-debug-action="cash100">Add 100 Pin Dollars</button>
+                <button data-debug-action="route">Open Route Map</button>
+                <button data-debug-action="freshRack">Fresh Rack</button>
+                <button data-debug-action="dailyReview">Review Daily Runs</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="vocab-tooltip" class="vocab-tooltip hidden">
+        <strong></strong>
+        <span></span>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="game-over-screen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 z-50 hidden">
+        <div class="max-w-md text-center flex flex-col items-center gap-6">
+            <h2 class="text-3xl font-extrabold text-red-500 crt-bloom">GAME OVER</h2>
+            <p class="text-xs text-gray-400 leading-relaxed">
+                You failed to achieve the target point score. The run is over!
+            </p>
+
+            <div class="w-full bg-violet-950/40 border-2 border-violet-800 p-4 rounded text-left flex flex-col gap-2">
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>FRAMES BEATEN:</span>
+                    <span id="final-frames" class="text-white font-bold">0</span>
+                </div>
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>FINAL FRAME LEVEL:</span>
+                    <span id="final-level" class="text-white font-bold">1</span>
+                </div>
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>TOTAL SCORE ACCUMULATED:</span>
+                    <span id="final-cash" class="text-yellow-400 font-bold">0</span>
+                </div>
+            </div>
+
+            <button id="btn-restart" class="pixel-btn w-full py-4 text-[10px] font-bold tracking-widest bg-red-700 border-red-500 hover:bg-red-600 uppercase">
+                Restart Run
+            </button>
+        </div>
+    </div>
+
+    <!-- PAUSE / OPTIONS OVERLAY -->
+    <div id="pause-screen" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 z-50 hidden">
+        <div class="hud-panel max-w-md w-full border-4 border-violet-600 p-6 rounded-lg flex flex-col gap-5 pointer-events-auto">
+            <div class="flex items-center justify-between border-b border-violet-900 pb-3">
+                <h2 class="text-xl font-bold text-violet-300 crt-bloom">PAUSED</h2>
+                <span class="text-[8px] text-gray-400">ESC / P</span>
+            </div>
+            <div id="pause-seed-chip" class="seed-chip pause-seed-chip hidden">SEED <span></span></div>
+
+            <div class="flex flex-col gap-4 text-[9px] text-gray-300">
+                <label class="flex flex-col gap-2">
+                    <span class="flex justify-between"><span>MASTER</span><span id="vol-master-label">80%</span></span>
+                    <input id="vol-master" type="range" min="0" max="100" value="80" class="accent-violet-500">
+                </label>
+                <label class="flex flex-col gap-2">
+                    <span class="flex justify-between"><span>MUSIC</span><span id="vol-music-label">18%</span></span>
+                    <input id="vol-music" type="range" min="0" max="100" value="18" class="accent-fuchsia-500">
+                </label>
+                <label class="flex flex-col gap-2">
+                    <span class="flex justify-between"><span>ALLEY</span><span id="vol-alley-label">30%</span></span>
+                    <input id="vol-alley" type="range" min="0" max="100" value="30" class="accent-yellow-500">
+                </label>
+                <label class="flex flex-col gap-2">
+                    <span class="flex justify-between"><span>EFFECTS</span><span id="vol-effects-label">85%</span></span>
+                    <input id="vol-effects" type="range" min="0" max="100" value="85" class="accent-emerald-500">
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button id="btn-resume" class="pixel-btn py-3 text-[9px] font-bold bg-emerald-600 border-emerald-400 uppercase">Resume</button>
+                <button id="btn-pause-restart" class="pixel-btn py-3 text-[9px] font-bold bg-red-700 border-red-500 uppercase">Restart</button>
+                <button id="btn-pause-legend" class="pixel-btn py-3 text-[9px] font-bold bg-[#5b3a24] border-[#f2c36b] uppercase">Legend</button>
+                <button id="btn-main-menu" class="pixel-btn py-3 text-[9px] font-bold bg-violet-700 border-violet-500 uppercase">Main Menu</button>
+                <button id="btn-pause-quit" class="native-quit-control hidden pixel-btn py-3 text-[9px] font-bold bg-red-900 border-red-500 uppercase">Quit Game</button>
+            </div>
+            <div class="save-slots">
+                <span>Save Roguelike Run</span>
+                <button type="button" data-save-slot="0" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 1</button>
+                <button type="button" data-save-slot="1" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 2</button>
+                <button type="button" data-save-slot="2" class="pixel-btn py-2 text-[8px] bg-purple-800 border-purple-400 uppercase">Slot 3</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGEND OVERLAY -->
+    <div id="legend-screen" class="lounge-overlay absolute inset-0 flex flex-col items-center justify-center p-4 z-[62] hidden pointer-events-auto">
+        <div class="lounge-panel max-w-7xl w-full max-h-[calc(100vh-2rem)] pixel-border p-8 flex flex-col gap-6 overflow-hidden">
+            <div class="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-[#6d5944] pb-5">
+                <div>
+                    <h2 class="text-2xl font-bold text-[#f2c36b]">LEGEND</h2>
+                    <p class="text-[13px] text-[#cbb89c] mt-3 leading-relaxed">Discovered run knowledge, 10-pin shop rules, and special lane weirdness.</p>
+                </div>
+                <button id="btn-close-legend" class="pixel-btn px-5 py-3 bg-red-700 border-red-500 hover:bg-red-600 text-[11px] font-bold uppercase">Close</button>
+            </div>
+            <div id="legend-tabs" class="shrink-0 grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+            <div class="legend-scroll">
+                <div id="legend-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI ALERTS BOX -->
+    <div id="alert-box" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white border-4 border-black px-6 py-2 text-[9px] rounded z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        Notification text
+    </div>
+    <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
+
+    <!-- GAME CODE IMPLEMENTATION -->
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
