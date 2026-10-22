@@ -1,0 +1,288 @@
+{
+  "version": "0.3.0",
+  "sourceCommit": "0c65051b2ee39031f520df615ffa4f71dad57456",
+  "builtAt": "2026-10-22T20:37:14.984Z",
+  "entry": "index.html",
+  "files": {
+    ".nojekyll": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "Map/Ball_001.png": {
+      "bytes": 171532,
+      "sha256": "8770db9e182c1a1f06decb79d377ae01df8b3b487a08d608c73e3c61275e59e5"
+    },
+    "Map/Ball_002.jpg": {
+      "bytes": 7469,
+      "sha256": "d2ec6bb55b8944cffc988c969e93158bb9d5e5fe81c187bf41d75e618075e90e"
+    },
+    "Map/Ball_003.jpeg": {
+      "bytes": 451406,
+      "sha256": "bd8cb706ec022aa7fbde14a3f36c339403bb013d9c2d99c30fa4724a2de1b26e"
+    },
+    "Map/Ball_004.jpg": {
+      "bytes": 12813,
+      "sha256": "0172cd6b9da6f37612d3d8cadb560c13ab78eae678d3e137c4eca9622f4b13bc"
+    },
+    "Map/Ball_005.jpeg": {
+      "bytes": 457064,
+      "sha256": "f29a6ede2e7668d976f48e2ae846daa8db809ec301c56f83f269d95a85ff28b8"
+    },
+    "Map/Dark_wood_044.jpeg": {
+      "bytes": 27639657,
+      "sha256": "4a56d003a7287e5f24f7123bf2b76e2e73f5cfe7de0a3319f1ffa0a3adfed599"
+    },
+    "Map/Light_wood_065.png": {
+      "bytes": 3473253,
+      "sha256": "1a1145e5d281f957c9085636ccb5c67e88c4aff245d9b19b3155ddc5a945b08a"
+    },
+    "Map/Num-1.jpg": {
+      "bytes": 287866,
+      "sha256": "59c530b7a7cc29df53f8e1e7d5a1ba4e2875387e53fd221adf513ef9b28bb18c"
+    },
+    "Map/Num-2.jpg": {
+      "bytes": 305206,
+      "sha256": "7243208dfe26194cb2236b182294b15365f2c790df890da49e718e945d2651e5"
+    },
+    "Map/Num-3.jpg": {
+      "bytes": 307462,
+      "sha256": "ab7b796db0ffd18671c52f77af965117f02c786798291ced473d8882c83aff42"
+    },
+    "Map/Num-4.jpg": {
+      "bytes": 295048,
+      "sha256": "9b20f723288fa01b8d91671f0c45014c9722f9431074e5b375f2e2487141391e"
+    },
+    "Map/Num-5.jpg": {
+      "bytes": 304097,
+      "sha256": "88eb4bea88d228229628c13b0f0f1016198c8fc3f9741d9a81f7f9e983227303"
+    },
+    "Map/Score-Bowling-Step-7.jpg": {
+      "bytes": 897207,
+      "sha256": "5e49c2c5d71fdcaf4d1ab479368e67fbc1ab3dcd2ae488f385247bd18536ad42"
+    },
+    "Map/Target_Bowling_001.jpg": {
+      "bytes": 28525,
+      "sha256": "94d7e45b0b3133f5d66deacc9ef38180a23c93dc928988a8e5c983021b67d862"
+    },
+    "ball.mp3": {
+      "bytes": 89760,
+      "sha256": "13c3cb6993587428a48503865127891983a5e6a1870db012d40fb8ddbb1e896a"
+    },
+    "bowling_alley_low.glb": {
+      "bytes": 10333408,
+      "sha256": "fc74fef6160440c9a8be0b8387b043845c68776efc861f3725b07670bd8eec06"
+    },
+    "bowling_ball.glb": {
+      "bytes": 1240356,
+      "sha256": "eaed1b331c5f51264d23d1664621ec500f6afa92e7a4465bae799670551ee93b"
+    },
+    "bowling_balls.glb": {
+      "bytes": 1417736,
+      "sha256": "85a7e792e79b8dddb2947fefc03afdd4b6d968e0ba9d43917e55c7febb307581"
+    },
+    "bowling_game_alley.glb": {
+      "bytes": 12314232,
+      "sha256": "348148fddf9cbb5150511d2f4d8f14baaf42094fe976efde9319b04c40dc57b8"
+    },
+    "environment.mp3": {
+      "bytes": 741120,
+      "sha256": "677cb6bab6e02f15723faf24762d1f68bff42923fc6d5a94f53b49732b09cdc4"
+    },
+    "index.html": {
+      "bytes": 48178,
+      "sha256": "d5df4b770c0232d0e94054c73e27d463dfa7dd0397baf13f476b4a16fe1cdc14"
+    },
+    "music1.mp3": {
+      "bytes": 4621117,
+      "sha256": "80a203eee19b0db59076a45b1acc9931ea13de04ca8d95248c6007cd9a4c8706"
+    },
+    "music2.mp3": {
+      "bytes": 4032375,
+      "sha256": "5fd49bdd5256e28616f29ccb52ccbd5f53c2aae1a7d4a9b8db0ef234b5f3d7d8"
+    },
+    "pin.glb": {
+      "bytes": 76212,
+      "sha256": "0eb5467ee7a390c46c7096915c2a39ea6ac783f388d4d280736628dd46e1119f"
+    },
+    "pin1.mp3": {
+      "bytes": 6599,
+      "sha256": "817acb01e923c53a7c2f5155f142f7123d170e7ca2356b77922ce85c715ef7b5"
+    },
+    "pin2.mp3": {
+      "bytes": 9107,
+      "sha256": "8c461268a3f3a6131c6ad6dff50ebeec321812f134b6514fc66509ee4711ea50"
+    },
+    "pin3.mp3": {
+      "bytes": 5972,
+      "sha256": "6ada5b995b83fcd5f0cec9e8261098a3358eb714a21b551e1395f8c9e413df91"
+    },
+    "pin4.mp3": {
+      "bytes": 13286,
+      "sha256": "6b5e9c55d4b01bb54cac8c7c1d21cc58c4853271b0c908666e3f46c339c064e5"
+    },
+    "pin5.mp3": {
+      "bytes": 12450,
+      "sha256": "719a18bd3612c5abfcd4b5b1abeabf07d4feb8b88dceee89d9950026d505abb1"
+    },
+    "pin6.mp3": {
+      "bytes": 10361,
+      "sha256": "8d1381c824c1e217808f7d40660b3a730ac23166b7801f4eb7835ec6302ec3c2"
+    },
+    "src/assets/branding/goose-games-logo.png": {
+      "bytes": 467186,
+      "sha256": "2206d24b98b0152c40da714e126449017dd9573e70431fd3092e2d654b193591"
+    },
+    "src/audio/retroAudio.js": {
+      "bytes": 11894,
+      "sha256": "65b5bcf0d7a5b533ead3ff0c83030a4343f647b1b3bca1994f56253ebae63cbc"
+    },
+    "src/content/events.js": {
+      "bytes": 5815,
+      "sha256": "19ed3691c9fc3df05325c360065515806102b01f7d6b108fe501890e7c022ed4"
+    },
+    "src/content/pinTypes.js": {
+      "bytes": 527,
+      "sha256": "25808555d1e0af411058e6454abe0442ed9b97c4401ee588165975b45f15fd9f"
+    },
+    "src/content/routes.js": {
+      "bytes": 6013,
+      "sha256": "63adadd7f51c36cb45c4c35f09200291177da972398bf888303b7b90491e51af"
+    },
+    "src/content/shopUpgrades.js": {
+      "bytes": 8405,
+      "sha256": "7465c82ba2884907308a323705255ba25388fc4973c35513f9ece0ad36ebdd33"
+    },
+    "src/content/tenpinShop.js": {
+      "bytes": 3314,
+      "sha256": "0480cf7158a25e51a1c8e92b22db8b22bfe2e7276a977c44cd279feb4280b3c3"
+    },
+    "src/content/vocabulary.js": {
+      "bytes": 2908,
+      "sha256": "d8b8ba89420055901b45166b4f92f84674772897184bf5f673780b23cdf8e557"
+    },
+    "src/core/runtime.js": {
+      "bytes": 204,
+      "sha256": "1bb9e90d01426c16e62dbb7bfd7b116bc79fd71c731034b94fc76bdd583c6516"
+    },
+    "src/core/state.js": {
+      "bytes": 2483,
+      "sha256": "6e858db8c8d6f810b2f3f955beb36db98f7fd936368dd2164f548749673d511f"
+    },
+    "src/debug/defaultConfig.js": {
+      "bytes": 7871,
+      "sha256": "53e0f972ac67087c5f0df71c34c580a8f2398a0d844094a00b39a0e6a1ea55d4"
+    },
+    "src/game/app.js": {
+      "bytes": 415782,
+      "sha256": "92f0dd34fe885015fe7c2f8c350671ea8aa6a1c00c86712467087694bd9392f7"
+    },
+    "src/game/ballLoadout.js": {
+      "bytes": 3530,
+      "sha256": "6c30d1d4da962981f59c4d13fe6f3bdfce241f1c0cc050ea1ff29fa562293084"
+    },
+    "src/game/laneHazards.js": {
+      "bytes": 2418,
+      "sha256": "ef9d5d53856e17a43b6816c389fe8fcd431156e1ee688b898c064f3f568c3ca2"
+    },
+    "src/game/laneLayout.js": {
+      "bytes": 4219,
+      "sha256": "e9b054aea9aa4c5f63617ce158688b17e50a5e5d3b38a7e80e9dc625380c2703"
+    },
+    "src/main.js": {
+      "bytes": 1408,
+      "sha256": "0fabfa622c719441f36c08d4f066a9f28ed668357cc2d6fa8f12070f388ceb34"
+    },
+    "src/physics/rapierShim.js": {
+      "bytes": 13053,
+      "sha256": "19ef6e8fdbbb94a85d64df057d7a4cbcc99ff7fc6a5c9989185e9b92e9f858b9"
+    },
+    "src/physics/world.js": {
+      "bytes": 90,
+      "sha256": "c161fdc6c1dff1bf86d250254b7d00e8be13425f735c1fec8428fefc808e73bd"
+    },
+    "src/scene/assets.js": {
+      "bytes": 1897,
+      "sha256": "ff8ff2afdb2d7ca0c232e781b37c2f40e64a736a050e8ef641142aec25f8bd03"
+    },
+    "src/scene/gameplayVisuals.js": {
+      "bytes": 1212,
+      "sha256": "3c2b15ea491bf5e3649f36b5eaf83e95171236e194b1ff9afe9c22e2c808dc1c"
+    },
+    "src/scene/particles.js": {
+      "bytes": 1481,
+      "sha256": "7894816063c8fe1aec4c9c1aa13c8f9e5815c8375d6773a03f16e106fbb2bea9"
+    },
+    "src/scene/pinGeometry.js": {
+      "bytes": 695,
+      "sha256": "989e9b5315a63b8e385f3ae7f6442d5b8edf6c524a0e004105083cc03bc3bf56"
+    },
+    "src/scene/presentation.js": {
+      "bytes": 26746,
+      "sha256": "9f866084d4ccac9188bbdbab9ca18d135cc65db899168616053e22a050d28297"
+    },
+    "src/scene/reflectionPass.js": {
+      "bytes": 2483,
+      "sha256": "b723e9bee82d6a10fa7d1ab7ad04484b65bbe3e4371bcb4882fca7a8f0d8a164"
+    },
+    "src/scene/sharedGeometry.js": {
+      "bytes": 1490,
+      "sha256": "bf2b1d1d696cf59f315950a3fd0aba0d67f77507c6ec8cb3174943d2e07897f4"
+    },
+    "src/ui/cabinetArt.js": {
+      "bytes": 10494,
+      "sha256": "640389c3a713f600abdc1b07fd73be21d10d4b6b5965aef6af5f002336d0d665"
+    },
+    "src/ui/dom.js": {
+      "bytes": 302,
+      "sha256": "e1fef8c87a0413f98a512d6a6c361bf41f9212becb2b4cd27e9b5dd06d2a671f"
+    },
+    "src/ui/hud.js": {
+      "bytes": 90,
+      "sha256": "7f09f1a7735e89590c915cd4ebb061293b85d726e1ffeb5ae1457db23ba7ed6d"
+    },
+    "src/ui/routeArt.js": {
+      "bytes": 12075,
+      "sha256": "2406b686da8b54c43c883fc821bd8fb65418011e13392b541d2e106df7784d92"
+    },
+    "src/ui/scoreHud.js": {
+      "bytes": 1481,
+      "sha256": "3b3d90a219303b441ec57affe3f6edbddd2a6f5adf23c070a5b9514385b3d970"
+    },
+    "src/ui/shopArt.js": {
+      "bytes": 13613,
+      "sha256": "00b5d7c944ed0f098afb6d91c40a6f6abfc6cb2a99512efb2e0e4d5d20d0a71a"
+    },
+    "styles/arcade.css": {
+      "bytes": 26697,
+      "sha256": "f5101b99e2e2e270928418788976bd1dc3214bb9426ac85ebcd84233f3b33931"
+    },
+    "styles/base.css": {
+      "bytes": 119246,
+      "sha256": "cb256fd66bf0061b120a773b7a9c520a63a240573d5bd63a2f66a1ec782a3ea6"
+    },
+    "styles/cabinet.css": {
+      "bytes": 49591,
+      "sha256": "4ffccdd95b2d6a5da3000713343c9dae1f47871090d67f35afd12a38e98586df"
+    },
+    "styles/debug.css": {
+      "bytes": 89,
+      "sha256": "25c15fb71ecc4fb4da4e95f4e17ba9ad426968a5b20950aac3d9b91ff48a73d3"
+    },
+    "styles/gameplay.css": {
+      "bytes": 2262,
+      "sha256": "c030e570e509e7f77bf3b2d13db1b366afaf0de7663dae9cfd4aeb433df0c4f1"
+    },
+    "styles/presentation.css": {
+      "bytes": 10170,
+      "sha256": "60ca6a5af249b5a7d361cd7d2ac5f26ad7fb3aeb8e05aa4c7f077d6fa88f0798"
+    },
+    "styles/proshop.css": {
+      "bytes": 28670,
+      "sha256": "0575a644945ef93f541b2658e77a4b243f86e979c45b3a836e3ee5e2fb4bd790"
+    },
+    "styles/ui.css": {
+      "bytes": 86,
+      "sha256": "f5db5ae6a0574fdf2cead4baf4d48807388d4c4a4560c31996837785712e049c"
+    }
+  }
+}

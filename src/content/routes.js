@@ -173,7 +173,7 @@ export const BOSS_VARIANTS = {
             id: 'boss_gutter_maw',
             name: 'Gutter Maw',
             label: 'BOSS',
-            desc: 'The lane is wide and the gutters bite. Stay disciplined or lose the pocket.',
+            desc: 'Gutter black holes pull near the edges after a brief launch grace. Keep a center line; Anchor Cover resists the pull and charged bumpers catch exits.',
             reward: 27,
             targetMod: 14,
             rollBonus: 1,
@@ -181,6 +181,7 @@ export const BOSS_VARIANTS = {
             hookMod: 1.05,
             pinScoreMod: 1.2,
             gutterPull: 1.9,
+            gutterMaw: true,
             boss: true
         }
     ],

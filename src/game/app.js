@@ -1,20 +1,27 @@
-import { RetroAudio } from '../audio/retroAudio.js';
-import { GAME } from '../core/state.js';
-import { SHOP_UPGRADES } from '../content/shopUpgrades.js';
-import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js';
-import { EVENT_TYPES } from '../content/events.js';
-import { VOCABULARY } from '../content/vocabulary.js';
-import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js';
-import { PIN_TYPES } from '../content/pinTypes.js';
-import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js';
-import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js';
-import { initPhysics } from '../physics/rapierShim.js?v=20261019d';
-import { createLaneDimensions, createLaneLayout, laneCameraDistance } from './laneLayout.js';
-import { createLanePresentation } from '../scene/presentation.js?v=20261019f';
-import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=20261019f';
+import { renderReflectionPass, shouldUpdateReflection, syncReflectionClone } from '../scene/reflectionPass.js?v=0.3.0';
+import { BALL_TRAITS, STARTER_BALLS, createBallLoadout, migrateBallLoadout, selectedBall, ballBonuses, canSwitchBall, switchBall, laneModifierLabel } from './ballLoadout.js?v=0.3.0';
+import { migrateBumperCharges, createBumperContacts, consumeBumperImpact, rearmBumperContacts, gutterMawDelta, isGutterMawRoute } from './laneHazards.js?v=0.3.0';
+import { createMawVisuals } from '../scene/gameplayVisuals.js?v=0.3.0';
+import { syncTextCells } from '../ui/scoreHud.js?v=0.3.0';
+import { setIfChanged } from '../ui/dom.js?v=0.3.0';
+import { updateParticles } from '../scene/particles.js?v=0.3.0';
+import { RetroAudio } from '../audio/retroAudio.js?v=0.3.0';
+import { GAME } from '../core/state.js?v=0.3.0';
+import { SHOP_UPGRADES } from '../content/shopUpgrades.js?v=0.3.0';
+import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js?v=0.3.0';
+import { EVENT_TYPES } from '../content/events.js?v=0.3.0';
+import { VOCABULARY } from '../content/vocabulary.js?v=0.3.0';
+import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js?v=0.3.0';
+import { PIN_TYPES } from '../content/pinTypes.js?v=0.3.0';
+import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js?v=0.3.0';
+import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js?v=0.3.0';
+import { initPhysics } from '../physics/rapierShim.js?v=0.3.0';
+import { createLaneDimensions, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from './laneLayout.js?v=0.3.0';
+import { createLanePresentation } from '../scene/presentation.js?v=0.3.0';
+import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=0.3.0';
 
-import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=20261019h';
-import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=20261019h';
+import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=0.3.0';
+import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=0.3.0';
 let eventRewardTimer = null;
 let debugEventIndex = 0;
 
@@ -63,7 +70,7 @@ const DAILY_POOLS = {
         { id: 'spare-chalk', name: 'Spare Chalk Marks', type: 'Featured Shop', icon: 'fa-chalkboard', desc: 'Target relief builds have a better shot.', mechanic: 'Spare Chalk Marks is favored when available.', shopUpgradeId: 'spare_chalk' },
         { id: 'polish-counter', name: 'Polish Counter', type: 'Featured Shop', icon: 'fa-spray-can-sparkles', desc: 'Speed and polish options show up more.', mechanic: 'Fresh Polish is favored when available.', shopUpgradeId: 'polished_ball' },
         { id: 'gyro-sale', name: 'Gyro Sale', type: 'Featured Shop', icon: 'fa-sliders', desc: 'Steering builds are easier to start.', mechanic: 'Control upgrades are more likely.', shopCategory: 'CONTROL' },
-        { id: 'bumper-bin', name: 'Bumper Bin', type: 'Featured Shop', icon: 'fa-shield-halved', desc: 'Emergency one-frame safety tools are stocked.', mechanic: 'Temporary Bumper Guards is favored.', shopUpgradeId: 'gutters' },
+        { id: 'bumper-bin', name: 'Bumper Bin', type: 'Featured Shop', icon: 'fa-shield-halved', desc: 'Shared bumper impact charges are stocked.', mechanic: 'Charged Bumper Guards is favored.', shopUpgradeId: 'gutters' },
         { id: 'core-night', name: 'Core Night', type: 'Featured Shop', icon: 'fa-bowling-ball', desc: 'Ball-core upgrades get extra shelf space.', mechanic: 'Ball upgrades are more likely.', shopCategory: 'BALL' },
         { id: 'practice-table', name: 'Practice Table', type: 'Featured Shop', icon: 'fa-clipboard-check', desc: 'Clutch one-throw tools are easier to find.', mechanic: 'Practice Frame Coupon is favored.', shopUpgradeId: 'practice_frame' }
     ],
@@ -166,6 +173,11 @@ let laneReflector = null;
 let pinDeckBodies = [];
 let laneStaticBodies = [];
 let gutterGuardsArray = [];
+let bumperContacts = createBumperContacts();
+let mawVisuals = null;
+let throwElapsed = 0;
+let ballHudSignature = '';
+let starterBallIds = ['azure', 'amber'];
 let fpsCounter = null;
 let legendActiveTab = 'upgrades';
 let howToStepIndex = 0;
@@ -356,7 +368,7 @@ const BOWLING_PHYSICS = {
     poundsOverHouseBallScale: 0.18,
     pinMass: 1.5,
     heavyPinMassBonus: 0.68, // roughly +1.5 lb if treating physics mass like kg
-    rackJitter: 0.018,
+    rackJitter: PIN_RACK_MICRO_JITTER,
     launchBase: 14.4,
     launchPower: 9.6,
     skidPortion: 0.5,
@@ -379,7 +391,7 @@ const BOWLING_PHYSICS = {
 
 function initEngine() {
     const container = document.getElementById('canvas-container');
-
+    
     // ThreeJS setup
     scene = new THREE.Scene();
     scene.fog = null;
@@ -623,7 +635,7 @@ function laneLength() {
 function requestedPhysicsLaneWidth(frameNumber = GAME?.frame || 1) {
     const cfg = debugState.config.physicsLane || DEFAULT_DEBUG_CONFIG.physicsLane;
     if (cfg.useFrameWidth !== false) return laneWidthForFrame(frameNumber);
-    return Math.max(1.5, Number(cfg.width || LANE.referenceWidth));
+    return Math.max(MIN_PLAYABLE_LANE_WIDTH, Number(cfg.width || LANE.referenceWidth));
 }
 
 function pinRackOffset() {
@@ -1193,17 +1205,8 @@ function createPlanarReflector(geometry, options = {}) {
     scope.frustumCulled = false;
     scope.userData.renderTarget = renderTarget;
 
-    function setPlanarReflectionExcludedVisible(root, visible) {
-        const changed = [];
-        root.traverse((object) => {
-            if (!object.userData?.excludeFromPlanarReflection || object.visible === visible) return;
-            changed.push(object);
-            object.visible = visible;
-        });
-        return changed;
-    }
-
     scope.onBeforeRender = function(reflectionRenderer, reflectionScene, reflectionCamera) {
+        if (!shouldUpdateReflection(scope, updateInterval)) return;
         reflectorWorldPosition.setFromMatrixPosition(scope.matrixWorld);
         cameraWorldPosition.setFromMatrixPosition(reflectionCamera.matrixWorld);
         rotationMatrix.extractRotation(scope.matrixWorld);
@@ -1258,24 +1261,7 @@ function createPlanarReflector(geometry, options = {}) {
             projectionMatrix.elements[14] = clipPlane.w;
         }
 
-        scope.userData.reflectionFrameCounter = ((scope.userData.reflectionFrameCounter || 0) + 1) % updateInterval;
-        if (scope.userData.reflectionFrameCounter !== 0) return;
-
-        scope.visible = false;
-        const hiddenForReflection = setPlanarReflectionExcludedVisible(reflectionScene, false);
-        const currentRenderTarget = reflectionRenderer.getRenderTarget();
-        const currentXrEnabled = reflectionRenderer.xr.enabled;
-        const currentShadowAutoUpdate = reflectionRenderer.shadowMap.autoUpdate;
-        reflectionRenderer.xr.enabled = false;
-        reflectionRenderer.shadowMap.autoUpdate = false;
-        reflectionRenderer.setRenderTarget(renderTarget);
-        reflectionRenderer.clear();
-        reflectionRenderer.render(reflectionScene, virtualCamera);
-        reflectionRenderer.xr.enabled = currentXrEnabled;
-        reflectionRenderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
-        reflectionRenderer.setRenderTarget(currentRenderTarget);
-        hiddenForReflection.forEach((object) => { object.visible = true; });
-        scope.visible = true;
+        renderReflectionPass(reflectionRenderer, reflectionScene, virtualCamera, scope, renderTarget, reflectionCamera.viewport);
     };
 
     return scope;
@@ -1848,7 +1834,7 @@ function handleDebugConfigEdit(path) {
             ballBody.position.set(next.x, next.y, next.z);
             ballBody.velocity.set(0, 0, 0);
             ballBody.angularVelocity.set(0, 0, 0);
-            if (ballMesh) ballMesh.position.copy(ballBody.position);
+            if (ballMesh) ballBody.position.copyTo(ballMesh.position);
             resetBallMotionState();
         }
     }
@@ -2330,8 +2316,11 @@ function createPinVisual(type, pinRadius, pinHeight) {
 function createReflectionClone(source) {
     if (!debugState.config.reflections.enabled) return null;
     const clone = source.clone(true);
+    clone.userData.excludeFromPlanarReflection = true;
     clone.traverse((child) => {
         if (!child.isMesh) return;
+        presentation?.retainGeometry(child);
+        child.castShadow = false;
         const sourceMaterial = child.material;
         const color = sourceMaterial?.color ? sourceMaterial.color.clone() : new THREE.Color(0xffffff);
         child.material = new THREE.MeshBasicMaterial({
@@ -2355,12 +2344,7 @@ function updateReflectionClone(source, reflection) {
     if (!source || !reflection) return;
     const cfg = debugState.config.reflections || DEFAULT_DEBUG_CONFIG.reflections;
     const floorY = Number(cfg.floorY ?? laneOrigin().y);
-    reflection.visible = Boolean(cfg.enabled && source.visible);
-    reflection.position.set(source.position.x, floorY - (source.position.y - floorY) + 0.03, source.position.z);
-    reflection.quaternion.copy(source.quaternion);
-    reflection.traverse((child) => {
-        if (child.isMesh && child.material) child.material.opacity = cfg.opacity;
-    });
+    syncReflectionClone(source, reflection, cfg, floorY);
 }
 
 function updatePinReflections() {
@@ -3183,6 +3167,8 @@ function createBallVisual(radius) {
 }
 
 function buildPhysicalLane(laneWidth = LANE.currentWidth) {
+    mawVisuals?.dispose();
+    mawVisuals = null;
     laneObjects.forEach(obj => disposeGameVisual(obj));
     laneObjects = [];
     clearGutterVisuals();
@@ -3228,7 +3214,7 @@ function buildPhysicalLane(laneWidth = LANE.currentWidth) {
         metalness: 0.08
     });
     const laneMesh = new THREE.Mesh(laneGeo, laneMat);
-    laneMesh.position.copy(laneBody.position);
+    laneBody.position.copyTo(laneMesh.position);
     laneMesh.receiveShadow = true;
     scene.add(laneMesh);
     laneObjects.push(laneMesh);
@@ -3289,7 +3275,7 @@ function buildPinDeckContainment(laneWidth) {
             visualMat
         );
         wall.name = `pin-deck-visible-wall-${side}`;
-        wall.position.copy(body.position);
+        body.position.copyTo(wall.position);
         wall.castShadow = true;
         wall.receiveShadow = true;
         scene.add(wall);
@@ -3311,14 +3297,15 @@ function buildPinDeckContainment(laneWidth) {
 
 function rebuildLaneFromDebug() {
     buildPhysicalLane(requestedPhysicsLaneWidth(GAME.frame));
-    toggleGutterGuards(GAME.activeUpgrades?.gutterGuards);
+    toggleGutterGuards(migrateBumperCharges(GAME.activeUpgrades) > 0);
+    syncMawVisuals();
     if (ballBody) {
         const radius = ballBody.shapes?.[0]?.radius || 0.49;
         const next = ballStartPosition(radius);
         ballBody.position.set(next.x, next.y, next.z);
         ballBody.velocity.set(0, 0, 0);
         ballBody.angularVelocity.set(0, 0, 0);
-        if (ballMesh) ballMesh.position.copy(ballBody.position);
+        if (ballMesh) ballBody.position.copyTo(ballMesh.position);
         resetBallMotionState();
     }
 }
@@ -3356,8 +3343,8 @@ function buildLaneDecorations() {
     for (let i = 0; i < archCount; i++) {
         const zPos = origin.z + length / 2 - 10 - (i * 7);
         const archGeo = new THREE.TorusGeometry(5, 0.08, 8, 24, Math.PI);
-        const archMat = new THREE.MeshBasicMaterial({
-            color: i % 2 === 0 ? 0xef4444 : 0xa855f7
+        const archMat = new THREE.MeshBasicMaterial({ 
+            color: i % 2 === 0 ? 0xef4444 : 0xa855f7 
         });
         const arch = new THREE.Mesh(archGeo, archMat);
         arch.position.set(origin.x, fixtureY - 0.75, zPos);
@@ -3520,12 +3507,12 @@ function buildLaneDecorations() {
 function toggleGutterGuards(active) {
     gutterGuardsArray.forEach(g => {
         world.remove(g.body);
-        scene.remove(g.mesh);
+        disposeGameVisual(g.mesh);
     });
     gutterGuardsArray = [];
 
     if (active) {
-        const guardMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xaa1c3b });
+        const guardMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xaa1c3b, emissiveIntensity: 0.35 });
         const laneWidth = LANE.currentWidth;
         const currentLaneLength = laneLength();
         const origin = laneOrigin();
@@ -3535,15 +3522,26 @@ function toggleGutterGuards(active) {
             const guardBody = new CANNON.Body({ mass: 0, material: MATERIALS.guard });
             guardBody.addShape(guardShape);
             guardBody.position.set(origin.x + side * (laneWidth/2 + 0.08), origin.y + 0.2, origin.z);
+            guardBody.addEventListener('collide', event => {
+                if (event.body !== ballBody) return;
+                if (consumeBumperImpact(GAME.activeUpgrades, bumperContacts, side, GAME.state === 'BALL_ROLLING')) {
+                    showAlert(`BUMPER SAVE • ${GAME.activeUpgrades.bumperCharges} charges left`);
+                    sfx.playTick();
+                    const guard = gutterGuardsArray.find(item => item.body === guardBody);
+                    if (guard) guard.flash = 0.35;
+                    autoSaveRunSlot();
+                }
+            });
             world.addBody(guardBody);
 
             const guardGeo = new THREE.BoxGeometry(0.08, 0.7, currentLaneLength);
-            const guardMesh = new THREE.Mesh(guardGeo, guardMat);
-            guardMesh.position.copy(guardBody.position);
+            const guardMesh = new THREE.Mesh(guardGeo, guardMat.clone());
+            guardBody.position.copyTo(guardMesh.position);
             scene.add(guardMesh);
 
-            gutterGuardsArray.push({ body: guardBody, mesh: guardMesh });
+            gutterGuardsArray.push({ body: guardBody, mesh: guardMesh, flash: 0 });
         });
+        guardMat.dispose();
     }
 }
 
@@ -3578,7 +3576,7 @@ function spawnPin(x, z, type) {
     body.addShape(neckShape, new CANNON.Vec3(0, 0.46 * scale, 0));
     body.addShape(headShape, new CANNON.Vec3(0, 0.72 * scale, 0));
     body.position.set(x, laneOrigin().y + pinRackOffset().y + pinHeight / 2 + 0.02, z);
-
+    
     // Random tiny micro-offsets to trigger realistic physical chaotic collisions
     const microJitter = BOWLING_PHYSICS.rackJitter;
     body.position.x += (Math.random() - 0.5) * microJitter;
@@ -3591,8 +3589,8 @@ function spawnPin(x, z, type) {
     world.addBody(body);
 
     const pinGroup = createPinVisual(type, pinRadius, pinHeight);
-    pinGroup.position.copy(body.position);
-    pinGroup.quaternion.copy(body.quaternion);
+    body.position.copyTo(pinGroup.position);
+    body.quaternion.copyTo(pinGroup.quaternion);
     scene.add(pinGroup);
     const reflection = createReflectionClone(pinGroup);
     updateReflectionClone(pinGroup, reflection);
@@ -3618,8 +3616,10 @@ function spawnPin(x, z, type) {
     return pinRecord;
 }
 
+const getCachedRackLayout = createLaneLayoutCache();
+
 function currentRackLayout(frameNumber = GAME.frame) {
-    return createLaneLayout({ frame: frameNumber, classic: isTenPinMode(), layout: GAME.currentRoute?.layout, scale: pinGroupScale(), padding: debugState.config.physicsLane.frameWidthPadding });
+    return getCachedRackLayout({ frame: frameNumber, classic: isTenPinMode(), layout: GAME.currentRoute?.layout, scale: pinGroupScale(), padding: debugState.config.physicsLane.frameWidthPadding });
 }
 
 function generatePinGrid(frameNumber) {
@@ -3652,7 +3652,7 @@ function disposeGameVisual(object) {
     object.removeFromParent ? object.removeFromParent() : scene.remove(object);
     const geometries = new Set(), materials = new Set();
     object.traverse(child => {
-        if (child.geometry) geometries.add(child.geometry);
+        if (child.geometry && !presentation?.releaseGeometry(child)) geometries.add(child.geometry);
         [child.material].flat().filter(Boolean).forEach(material => materials.add(material));
     });
     geometries.forEach(geometry => geometry.dispose());
@@ -3739,7 +3739,7 @@ function rollPinType() {
     if (rand < gold + explosive) return PIN_TYPES.EXPLOSIVE;
     if (rand < gold + explosive + implosive) return PIN_TYPES.IMPLOSIVE;
     if (rand < gold + explosive + implosive + bouncy) return PIN_TYPES.BOUNCY;
-
+    
     return PIN_TYPES.STANDARD;
 }
 
@@ -3765,9 +3765,11 @@ function applyOneThrowBallUpgrade(kind) {
 }
 
 function captureThrowMods() {
+    const traits = ballBonuses(GAME);
     activeThrowMods = {
-        hookBoost: GAME.activeUpgrades.nextThrowHookBoost || 0,
-        hookDelay: GAME.activeUpgrades.nextThrowHookDelay || 0,
+        hookBoost: (GAME.activeUpgrades.nextThrowHookBoost || 0) + traits.hook,
+        hookDelay: (GAME.activeUpgrades.nextThrowHookDelay || 0) + traits.delay,
+        resistance: traits.resistance,
         stability: GAME.activeUpgrades.nextThrowStability || 0,
         cashMultiplier: GAME.activeUpgrades.nextThrowCashMultiplier || 1
     };
@@ -3782,6 +3784,8 @@ function clearOneThrowBallUpgrades() {
 }
 
 function spawnBall() {
+    bumperContacts = createBumperContacts();
+    throwElapsed = 0;
     if (ballBody) {
         world.remove(ballBody);
         disposeGameVisual(ballMesh);
@@ -3791,14 +3795,14 @@ function spawnBall() {
     const radius = baseRadius * GAME.activeUpgrades.ballSize;
     const modeMassBonus = isTenPinMode() ? BOWLING_PHYSICS.tenPinBallMassBonus : BOWLING_PHYSICS.roguelikeBallMassBonus;
     const upgradedWeightBonus = Math.max(0, GAME.activeUpgrades.ballMass - 12.0) * BOWLING_PHYSICS.poundsOverHouseBallScale;
-    const ballMass = BOWLING_PHYSICS.ballMass + modeMassBonus + upgradedWeightBonus + (GAME.activeUpgrades.nextThrowMassBoost || 0);
-
+    const ballMass = BOWLING_PHYSICS.ballMass + modeMassBonus + upgradedWeightBonus + (GAME.activeUpgrades.nextThrowMassBoost || 0) + ballBonuses(GAME).mass;
+    
     ballBody = new CANNON.Body({
         mass: ballMass,
         shape: new CANNON.Sphere(radius),
         material: MATERIALS.ball
     });
-
+    
     const start = ballStartPosition(radius);
     ballBody.position.set(start.x, start.y, start.z);
     ballBody.angularDamping = 0.035;
@@ -3806,10 +3810,11 @@ function spawnBall() {
     world.addBody(ballBody);
 
     ballMesh = createBallVisual(radius);
+    applyLoadoutBallSkin(ballMesh, radius);
     ballMesh.castShadow = true;
 
     scene.add(ballMesh);
-    ballMesh.position.copy(ballBody.position);
+    ballBody.position.copyTo(ballMesh.position);
     resetBallMotionState();
 }
 
@@ -3838,7 +3843,7 @@ function moveLaunchPosition(dir) {
     ballBody.position.set(next.x, next.y, next.z);
     ballBody.velocity.set(0, 0, 0);
     ballBody.angularVelocity.set(0, 0, 0);
-    if (ballMesh) ballMesh.position.copy(ballBody.position);
+    if (ballMesh) ballBody.position.copyTo(ballMesh.position);
     resetBallMotionState();
     gauge.updatePositionLabel();
     setPreRollCamera();
@@ -3856,7 +3861,7 @@ function triggerExplosiveForce(pinIndex, origin) {
         if (!other.body) return;
         const pinPos = other.body.position;
         const dist = pinPos.distanceTo(origin);
-
+        
         if (dist < radius) {
             const dir = new CANNON.Vec3();
             pinPos.vsub(origin, dir);
@@ -3886,7 +3891,7 @@ function triggerImplosiveForce(pinIndex, origin) {
         if (!other.body) return;
         const pinPos = other.body.position;
         const dist = pinPos.distanceTo(origin);
-
+        
         if (dist < radius) {
             const dir = new CANNON.Vec3();
             pinPos.vsub(origin, dir);
@@ -4302,7 +4307,7 @@ class RetroGauge {
 
     calculateCurve(timingError) {
         const absError = Math.abs(timingError);
-        const trueWindow = (isTenPinMode() ? this.trueWindow * 0.58 : this.trueWindow) + (GAME.activeUpgrades.timingForgiveness || 0) + (GAME.activeUpgrades.nextThrowFocus || 0);
+        const trueWindow = (isTenPinMode() ? this.trueWindow * 0.58 : this.trueWindow) + (GAME.activeUpgrades.timingForgiveness || 0) + (GAME.activeUpgrades.nextThrowFocus || 0) + ballBonuses(GAME).focus;
         if (absError <= trueWindow) return 0;
         const normalized = (absError - trueWindow) / (this.gutterWindow - trueWindow);
         const eased = Math.pow(THREE.MathUtils.clamp(normalized, 0, 1), 1.1);
@@ -4310,11 +4315,26 @@ class RetroGauge {
     }
 
     draw() {
+        // Canvas pixels persist. During rolls, pauses and menus the gauge is
+        // usually unchanged; repaint only when an actual drawing input changes.
+        const previous = this.lastDrawState;
+        if (previous && previous.stage === this.stage && previous.gameState === GAME.state &&
+            previous.aimAngle === this.aimAngle && previous.power === this.power &&
+            previous.timingPower === this.timingPower && previous.landedPower === this.landedPower &&
+            previous.selectedPower === this.selectedPower && previous.accuracyLine === this.accuracyLine &&
+            previous.safeWindow === this.safeWindow && previous.gutterWindow === this.gutterWindow &&
+            previous.width === this.canvas.width && previous.height === this.canvas.height) return;
+        this.lastDrawState = {
+            stage: this.stage, gameState: GAME.state, aimAngle: this.aimAngle, power: this.power,
+            timingPower: this.timingPower, landedPower: this.landedPower, selectedPower: this.selectedPower,
+            accuracyLine: this.accuracyLine, safeWindow: this.safeWindow, gutterWindow: this.gutterWindow,
+            width: this.canvas.width, height: this.canvas.height
+        };
         this.drawMobileGauge();
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
         const r = this.canvas.width / 2 - 11;
-
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         this.ctx.imageSmoothingEnabled = false;
@@ -4530,11 +4550,11 @@ function startPractice(frame = 1) {
 let lastShotLabel = '';
 function updateGameplayHud() {
     const active = ['MAIN_METER', 'BALL_ROLLING', 'ROLL_SETTLING'].includes(GAME.state) && !GAME.paused && !debugState.active;
-    document.getElementById('practice-toolbar').hidden = GAME.mode !== 'practice' || !active;
-    document.body.dataset.playing = String(active);
-    document.body.dataset.practice = String(GAME.mode === 'practice');
+    setIfChanged(document.getElementById('practice-toolbar'), 'hidden', GAME.mode !== 'practice' || !active);
+    setIfChanged(document.body.dataset, 'playing', String(active));
+    setIfChanged(document.body.dataset, 'practice', String(GAME.mode === 'practice'));
     const feedback = document.getElementById('release-feedback');
-    feedback.hidden = !active || performance.now() > releaseFeedbackUntil;
+    setIfChanged(feedback, 'hidden', !active || performance.now() > releaseFeedbackUntil);
     if (!feedback.hidden && feedback.textContent !== releaseFeedback) feedback.textContent = releaseFeedback;
     if (!active) return;
     const power = ['POWER_UP', 'POWER_RED_DOWN'].includes(gauge.stage);
@@ -4542,7 +4562,7 @@ function updateGameplayHud() {
     const aiming = GAME.state === 'MAIN_METER' && gauge.stage === 'AIM';
     const ready = GAME.state === 'ROLL_SETTLING' && GAME.stats.canContinueRoll;
     const label = aiming ? 'aim' : power ? 'power' : timing ? 'timing' : ready ? 'ready' : 'rolling';
-    document.getElementById('control-hud-row').dataset.stage = label;
+    setIfChanged(document.getElementById('control-hud-row').dataset, 'stage', label);
     if (lastShotLabel !== label) {
         document.getElementById('meter-caption').textContent = {
             aim: '01 / SET YOUR LINE', power: '02 / LOCK YOUR POWER',
@@ -4550,11 +4570,19 @@ function updateGameplayHud() {
         }[label];
         lastShotLabel = label;
     }
-    for (const id of ['btn-aim-left', 'btn-aim-right']) document.getElementById(id).disabled = !aiming;
-    document.getElementById('btn-camera-view').disabled = GAME.state !== 'MAIN_METER' || GAME.paused || debugState.active;
+    for (const id of ['btn-aim-left', 'btn-aim-right']) setIfChanged(document.getElementById(id), 'disabled', !aiming);
+    setIfChanged(document.getElementById('btn-camera-view'), 'disabled', GAME.state !== 'MAIN_METER' || GAME.paused || debugState.active);
 }
 
 function bindInputs() {
+    renderStarterChoices();
+    document.getElementById('ball-bag-buttons').addEventListener('keydown', event => {
+        if (event.code === 'Space' || event.code === 'Enter') event.stopPropagation();
+    });
+    document.getElementById('ball-bag-buttons').addEventListener('click', event => {
+        const button = event.target.closest('[data-ball-index]');
+        if (button) selectLoadoutBall(Number(button.dataset.ballIndex));
+    });
     const tutorial = document.querySelector('.tutorial-grid');
     const lessons = [
         ['01 / PICK A LANE', 'steer_ball', 'Twelve frames. Choose a route, then make it yours.'],
@@ -5001,6 +5029,24 @@ function toggleDebugActions(forceState = null) {
 
 function runDebugAction(action) {
     toggleDebugActions(false);
+    if (action === 'gameplayLab') {
+        if (GAME.mode !== 'roguelike' || GAME.state === 'TITLE' || GAME.state === 'GAMEOVER') return;
+        removeBallFromWorld();
+        GAME.shopSelection = ['ball_trait_pearl', 'ball_trait_anchor', 'gutters'];
+        GAME.shopSoldOut = [];
+        GAME.cash += 100;
+        triggerShopTransition();
+        return;
+    }
+    if (action === 'gutterMaw') {
+        if (GAME.mode !== 'roguelike' || !['MAIN_METER', 'SHOP', 'ROUTE'].includes(GAME.state)) return;
+        removeBallFromWorld();
+        GAME.currentRoute = { ...BOSS_VARIANTS[8].find(route => route.id === 'boss_gutter_maw') };
+        GAME.frame = 8;
+        for (const id of ['shop-screen', 'route-screen', 'boss-intro-screen']) document.getElementById(id).classList.add('hidden');
+        startFrame();
+        return;
+    }
     if (action === 'eventGallery') {
         for (const id of ['main-menu', 'roguelike-run-screen', 'legend-screen', 'pause-screen', 'game-over-screen']) document.getElementById(id).classList.add('hidden');
         startNewRun();
@@ -5871,6 +5917,8 @@ function snapshotRun() {
         shopRerolls: GAME.shopRerolls,
         upgradePurchases: GAME.upgradePurchases,
         activeUpgrades: GAME.activeUpgrades,
+        ballLoadout: GAME.ballLoadout,
+        gameplayVersion: 1,
         runModifiers: GAME.runModifiers,
         runSeed: GAME.runSeed,
         saveSlot: GAME.saveSlot,
@@ -5916,7 +5964,8 @@ function loadRunFromSlot(index) {
         shopSoldOut: slot.shopSoldOut || [],
         shopRerolls: slot.shopRerolls || 0,
         upgradePurchases: slot.upgradePurchases || 0,
-        activeUpgrades: { ...defaultActiveUpgrades(), ...(slot.activeUpgrades || {}) },
+        activeUpgrades: { ...defaultActiveUpgrades(), ...(slot.activeUpgrades || {}), bumperCharges: migrateBumperCharges(slot.activeUpgrades), gutterGuards: false },
+        ballLoadout: migrateBallLoadout(slot.ballLoadout),
         runModifiers: { ...defaultRunModifiers(), ...(slot.runModifiers || {}) },
         saveSlot: index,
         selectedRelic: slot.selectedRelic || loadProfile().selectedRelic || 'last_frame_token',
@@ -6041,6 +6090,7 @@ function maybeUseDeathRelic() {
 
 function returnToMainMenu() {
     autoSaveRunSlot();
+    clearGameplayLaneEffects();
     togglePause(false);
     toggleDebugActions(false);
     clearRollWatchdog();
@@ -6131,6 +6181,7 @@ function applyGutterCatch(dt) {
     const route = GAME.currentRoute || ROUTE_TYPES.STANDARD;
     const pull = route.gutterPull || 1;
     const localX = ballBody.position.x - origin.x;
+    if (gutterGuardsArray.length && Math.abs(localX) < LANE.currentWidth / 2 + radius) return;
     const laneEdge = LANE.currentWidth / 2 - radius * (0.18 + (pull - 1) * 0.16);
     if (Math.abs(localX) <= laneEdge) return;
 
@@ -6202,7 +6253,7 @@ function updateSpeedLines() {
                 opacity: THREE.MathUtils.lerp(0.28, 0.62, powerFactor)
             })
         );
-        dash.position.copy(ballBody.position);
+        ballBody.position.copyTo(dash.position);
         dash.position.addScaledVector(direction, -0.85 - i * 0.22);
         dash.position.addScaledVector(side, (Math.random() - 0.5) * 0.7);
         dash.position.y += 0.08 + Math.random() * 0.18;
@@ -6352,13 +6403,20 @@ function executeRoll(aim, power, spin) {
     triggerCameraShake(0.04);
 }
 
+// Synchronous scratch values: never retained by a pin or returned to callers.
+const pinQueryUp = new THREE.Vector3();
+const pinQueryPosition = new THREE.Vector3();
+
 function isPinKnocked(pin) {
     if (pin.knocked) return true;
     if (!pin.body) return false;
-    const pinUp = new THREE.Vector3(0, 1, 0);
-    pinUp.applyQuaternion(pin.mesh.quaternion);
-    const origin = laneOrigin();
-    return pinUp.y < 0.66 || pin.body.position.y < origin.y + 0.22 || Math.abs(pin.body.position.x - origin.x) > (LANE.currentWidth / 2 + PIN_SCALE.radius * pinGroupScale());
+    pinQueryUp.set(0, 1, 0).applyQuaternion(pin.mesh.quaternion);
+    if (pinQueryUp.y < 0.66) return true;
+    // Z depends on widening-lane dimensions; X/Y are the configured origin.
+    // This predicate needs no lane/rack dimension calculation or copied origin.
+    const origin = debugState.config.physicsLane?.position || { x: 0, y: 0 };
+    pin.body.position.copyTo(pinQueryPosition);
+    return pinQueryPosition.y < origin.y + 0.22 || Math.abs(pinQueryPosition.x - origin.x) > (LANE.currentWidth / 2 + PIN_SCALE.radius * pinGroupScale());
 }
 
 function startPinCleanup(pin) {
@@ -6368,6 +6426,12 @@ function startPinCleanup(pin) {
     pin.cleanupTimer = 0;
     pin.popScale = pin.mesh?.scale?.clone?.() || new THREE.Vector3(1, 1, 1);
     pin.popEffectDone = false;
+}
+
+function disposePinReflection(pin) {
+    if (!pin.reflection) return;
+    disposeGameVisual(pin.reflection);
+    pin.reflection = null;
 }
 
 function removePinFromWorld(pin) {
@@ -6382,8 +6446,7 @@ function removePinFromWorld(pin) {
         pin.meshRemoved = true;
     }
     if (pin.reflection) {
-        scene.remove(pin.reflection);
-        pin.reflection = null;
+        disposePinReflection(pin);
     }
     reflectionObjects = reflectionObjects.filter(obj => obj.parent);
 }
@@ -6800,7 +6863,7 @@ function prepareNextRoll(forceFreshRack = false) {
         if (pin.scored || isPinKnocked(pin)) {
             if (pin.body) world.remove(pin.body);
             disposeGameVisual(pin.mesh);
-            if (pin.reflection) scene.remove(pin.reflection);
+            disposePinReflection(pin);
         }
     });
     reflectionObjects = reflectionObjects.filter(obj => obj.parent);
@@ -7130,7 +7193,7 @@ function renderProShopCards(items, classic = false) {
     container.innerHTML = items.map((item, index) => {
         const visual = shopVisual(item);
         const cost = classic ? item.cost : upgradeCost(item);
-        const soldOut = !classic && (GAME.shopSoldOut || []).includes(item.id);
+        const soldOut = !classic && (item.traitId ? selectedBall(GAME)?.traits.includes(item.traitId) : !item.repeatable && (GAME.shopSoldOut || []).includes(item.id));
         const count = classic && item.typeKey ? GAME.tenPin.selectedRackSpecials.filter(type => type === item.typeKey).length : 0;
         const temporary = visual.duration !== 'THIS RUN';
         const offer = shopOfferState({ cash: GAME.cash, cost, soldOut, temporary, rackFull: classic && item.typeKey && GAME.tenPin.selectedRackSpecials.length >= 3, ready: classic && item.id === 'manual_rack' && GAME.tenPin.manualRackNext });
@@ -7138,7 +7201,7 @@ function renderProShopCards(items, classic = false) {
         return `<article class="gear-card ${offer.state}" data-gear-id="${item.id}" style="--gear-color:${visual.color};--gear-order:${index}">
             <div class="gear-card-top"><span>${visual.duration}</span><button type="button" class="gear-inspect-button" data-inspect-gear="${item.id}" aria-label="Inspect ${escapeHtml(item.name)}">i</button></div>
             <div class="gear-display">${shopArtwork(item)}${count ? `<span class="gear-packed-count">×${count} PACKED</span>` : ''}${soldOut ? `<span class="gear-owned-stamp">✓ ${temporary ? 'PACKED' : 'INSTALLED'}</span>` : ''}</div>
-            <div class="gear-copy"><span class="gear-category">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.name)}</h3><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${visual.summary}</p></div>
+            <div class="gear-copy"><span class="gear-category">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.name)}</h3><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${visual.summary}${item.traitId ? ` On ${escapeHtml(STARTER_BALLS.find(ball => ball.id === selectedBall(GAME)?.id)?.name || 'selected ball')}.` : ''}</p></div>
             <button type="button" class="gear-buy" data-buy-gear="${item.id}" aria-label="${escapeHtml(actionLabel)}" ${offer.canBuy ? '' : 'disabled'}><span>${offer.label}</span><b>${offer.state === 'owned' ? '✓' : `$${cost}`}</b></button>
         </article>`;
     }).join('');
@@ -7158,7 +7221,12 @@ function renderProShopLoadout() {
         }).join('')}</div><div class="loadout-note">${GAME.tenPin.manualRackNext ? 'MANUAL SETUP READY' : 'AUTO RACK'}<span>${nextThrowReady ? 'BALL TECH PACKED' : 'PICK YOUR EDGE'}</span></div>`;
     } else {
         const u = GAME.activeUpgrades;
-        container.innerHTML = `<div class="loadout-label"><span>YOUR HOUSE BUILD</span><b>${GAME.upgradePurchases || 0} ${GAME.upgradePurchases === 1 ? 'UPGRADE' : 'UPGRADES'}</b></div><div class="build-readouts">${[['CORE', `${uiNumber(u.ballMass)} LB`], ['SIZE', `${Math.round(u.ballSize * 100)}%`], ['PIN VALUE', `×${u.pinValueMultiplier.toFixed(2)}`], ['STEERING', u.spinPower > 0 ? 'ONLINE' : 'OFFLINE'], ['EXTRA ROLLS', `+${u.extraRolls}`]].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('')}</div>`;
+        container.innerHTML = `<div class="loadout-label"><span>YOUR HOUSE BUILD</span><b>${GAME.upgradePurchases || 0} ${GAME.upgradePurchases === 1 ? 'UPGRADE' : 'UPGRADES'}</b></div><div class="build-readouts">${[['CORE', `${uiNumber(u.ballMass)} LB`], ['SIZE', `${Math.round(u.ballSize * 100)}%`], ['PIN VALUE', `×${u.pinValueMultiplier.toFixed(2)}`], ['STEERING', u.spinPower > 0 ? 'ONLINE' : 'OFFLINE'], ['EXTRA ROLLS', `+${u.extraRolls}`], ['BUMPER IMPACTS', `${migrateBumperCharges(u)} SHARED`]].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('')}</div>`;
+        const bag = document.createElement('div');
+        bag.className = 'shop-ball-bag';
+        bag.innerHTML = '<p>House gear is shared. Apply permanent ball traits to:</p>' + ballButtonsMarkup();
+        container.prepend(bag);
+        bag.querySelectorAll('[data-ball-index]').forEach(button => button.addEventListener('click', () => selectLoadoutBall(Number(button.dataset.ballIndex))));
     }
 }
 
@@ -7480,6 +7548,7 @@ function triggerShopTransition() {
     if (GAME.currentRoute?.boss) recordBossBeat(GAME.currentRoute);
     GAME.state = 'SHOP';
     if (enteringShop) {
+        clearGameplayLaneEffects();
         document.getElementById('shop-purchase-feedback').hidden = true;
         GAME.shopRerolls = 0;
         GAME.shopSoldOut = [];
@@ -7493,7 +7562,7 @@ function triggerShopTransition() {
     document.querySelector('#shop-screen h2').innerText = GAME.currentRoute?.boss ? 'THE HOUSE IS YOURS.' : 'BUILD YOUR HOUSE.';
     document.querySelector('#shop-screen p').innerText = 'Pick some trouble. Take it to the lane.';
     document.getElementById('shop-next-goal-row').classList.remove('hidden');
-
+    
     const nextFrame = Math.min(GAME.maxFrames, GAME.frame + 1);
     document.getElementById('shop-next-target').innerText = GAME.frame >= GAME.maxFrames ? 'Run Complete' : `Choose route to Frame ${nextFrame}`;
     document.getElementById('btn-next-frame').innerText = 'Return to Route Map';
@@ -7573,6 +7642,7 @@ function chooseShopSelection(options = {}) {
         addUnique(pickFromCategory(category));
     });
     if (GAME.frame <= 4) {
+        addUnique(pickFromCategory('BALL'));
         addUnique(pickFromCategory('PINS'));
         addUnique(pickFromCategory(Math.random() < 0.55 ? 'ONE THROW' : 'CONTROL'));
     }
@@ -7700,6 +7770,7 @@ function escapeRegExp(value) {
 }
 
 function startNewRun(options = {}) {
+    clearGameplayLaneEffects();
     GAME.paused = false;
     GAME.mode = 'roguelike';
     activeHook = 0;
@@ -7717,6 +7788,9 @@ function startNewRun(options = {}) {
     GAME.shopSelection = [];
     GAME.upgradePurchases = 0;
     GAME.activeUpgrades = defaultActiveUpgrades();
+    GAME.ballLoadout = createBallLoadout(options.daily ? undefined : starterBallIds);
+    GAME.shopSoldOut = [];
+    GAME.shopRerolls = 0;
     GAME.runModifiers = defaultRunModifiers();
     if (options.daily) {
         GAME.runModifiers.daily = dailyRunModifiers();
@@ -7914,6 +7988,7 @@ function showBossIntro(route) {
 
 function bossRuleText(route) {
     const parts = [];
+    if (isGutterMawRoute(route)) parts.push('Black holes pull at the edges; center line is safe. Anchor Cover resists pull. Bumpers block exits while charged.');
     if (route.targetMod) parts.push(`Target +${route.targetMod}`);
 
     if (route.hookMod && route.hookMod !== 1) parts.push(`Hook ${Math.round(route.hookMod * 100)}%`);
@@ -7970,8 +8045,9 @@ function resolveEventChoice(event, choice) {
 window.purchaseUpgrade = function(itemId) {
     if (GAME.state !== 'SHOP' || isTenPinMode()) return;
     const upgrade = SHOP_UPGRADES.find(u => u.id === itemId);
-    if (!upgrade) return;
-    if ((GAME.shopSoldOut || []).includes(itemId)) return;
+    if (!upgrade || !(GAME.shopSelection || []).includes(itemId)) return;
+    if (upgrade.traitId && (!selectedBall(GAME) || selectedBall(GAME).traits.includes(upgrade.traitId))) return;
+    if (!upgrade.repeatable && !upgrade.traitId && (GAME.shopSoldOut || []).includes(itemId)) return;
     const cost = upgradeCost(upgrade);
     if (GAME.cash < cost) return;
 
@@ -7980,7 +8056,7 @@ window.purchaseUpgrade = function(itemId) {
     sfx.playCoin();
     upgrade.effect();
     if (!GAME.shopSoldOut) GAME.shopSoldOut = [];
-    if (!GAME.shopSoldOut.includes(itemId)) GAME.shopSoldOut.push(itemId);
+    if (!upgrade.repeatable && !upgrade.traitId && !GAME.shopSoldOut.includes(itemId)) GAME.shopSoldOut.push(itemId);
     showAlert(`UPGRADED: ${upgrade.name}!`);
     autoSaveRunSlot();
 
@@ -8015,12 +8091,13 @@ function startFrame() {
     // A perfect rack must always clear a round, even when a route raises its target.
     GAME.targetScore = Math.min(GAME.targetScore, physicalPins.reduce((total, pin) => total + pinScoreValue(pin), 0));
     triggerRackLoadedSweep();
-    const bumperGuardsActive = GAME.activeUpgrades.gutterGuards;
-    toggleGutterGuards(bumperGuardsActive);
-    if (bumperGuardsActive) {
-        showSpecialUseOverlay('Bumper Guards', 'One-frame side guards are active for this lane.', 'fa-shield-halved');
-    }
+    GAME.activeUpgrades.bumperCharges = migrateBumperCharges(GAME.activeUpgrades);
     GAME.activeUpgrades.gutterGuards = false;
+    toggleGutterGuards(GAME.activeUpgrades.bumperCharges > 0);
+    syncMawVisuals();
+    if (isGutterMawRoute(GAME.currentRoute)) {
+        showAlert('GUTTER MAW • Keep to the center. Anchor Cover resists the pull.');
+    }
     launchX = 0;
     spawnBall();
 
@@ -8030,6 +8107,7 @@ function startFrame() {
 }
 
 function endRun(victory = false) {
+    clearGameplayLaneEffects();
     clearRollWatchdog();
     const finishedSlot = GAME.saveSlot;
     recordRunStats(victory);
@@ -8042,7 +8120,7 @@ function endRun(victory = false) {
     document.getElementById('game-over-screen').dataset.outcome = victory ? 'win' : 'loss';
     document.getElementById('result-art').innerHTML = cabinetArt(victory ? 'trophy' : 'extra_roll', victory ? '#ffd27d' : '#b991ef');
     document.querySelector('#game-over-screen p').innerText = victory ? `Twelve frames. Three bosses. The house is yours.${dailyText}` : `The house takes this one. Come back swinging.${dailyText}`;
-
+    
     document.getElementById('final-frames').innerText = victory ? GAME.maxFrames : GAME.frame - 1;
     document.getElementById('final-level').innerText = GAME.frame;
     document.getElementById('final-cash').innerText = uiNumber(GAME.cumulativeScore);
@@ -8086,7 +8164,8 @@ function defaultActiveUpgrades() {
         nextThrowHookDelay: 0,
         nextThrowStability: 0,
         nextThrowCashMultiplier: 1,
-        gutterGuards: false
+        gutterGuards: false,
+        bumperCharges: 0
     };
 }
 
@@ -8196,31 +8275,29 @@ function updateUI() {
 
     const frameBoxes = document.getElementById('hud-frame-boxes');
     const compactScoreHud = isPortraitMobileLayout();
-    frameBoxes.innerHTML = '';
-    frameBoxes.style.gridTemplateColumns = compactScoreHud
+    const frameCells = [];
+    setIfChanged(frameBoxes.style, 'gridTemplateColumns', compactScoreHud
         ? `repeat(${GAME.stats.maxRollsThisFrame}, minmax(24px, 1fr)) 38px`
-        : `repeat(${GAME.stats.maxRollsThisFrame}, minmax(42px, 1fr)) 56px`;
+        : `repeat(${GAME.stats.maxRollsThisFrame}, minmax(42px, 1fr)) 56px`);
     for (let i = 0; i < GAME.stats.maxRollsThisFrame; i++) {
-        const box = document.createElement('div');
         const completed = GAME.stats.rollScores[i];
         const isCurrent = i === GAME.stats.rollsThisFrame - 1 && !GAME.stats.rollRecorded && GAME.state !== 'MAIN_METER';
-        box.className = `${compactScoreHud ? 'h-8 text-[10px]' : 'h-11 text-[13px]'} border-r-2 border-white flex items-center justify-center font-bold ${isCurrent ? 'text-yellow-300 bg-violet-900/80' : 'text-white bg-violet-950/40'}`;
+        const className = `${compactScoreHud ? 'h-8 text-[10px]' : 'h-11 text-[13px]'} border-r-2 border-white flex items-center justify-center font-bold ${isCurrent ? 'text-yellow-300 bg-violet-900/80' : 'text-white bg-violet-950/40'}`;
+        let text;
         if (completed !== undefined) {
-            box.innerText = completed >= GAME.stats.pinsSpawned ? 'X' : uiNumber(completed);
+            text = completed >= GAME.stats.pinsSpawned ? 'X' : uiNumber(completed);
         } else if (isCurrent) {
-            box.innerText = uiNumber(GAME.stats.currentRollScore);
+            text = uiNumber(GAME.stats.currentRollScore);
         } else {
-            box.innerText = '-';
+            text = '-';
         }
-        frameBoxes.appendChild(box);
+        frameCells.push({ className, text });
     }
-    const totalBox = document.createElement('div');
-    totalBox.className = `${compactScoreHud ? 'h-8 text-[10px]' : 'h-11 text-[13px]'} flex items-center justify-center font-bold text-emerald-300 bg-black`;
-    totalBox.innerText = uiNumber(GAME.score);
-    frameBoxes.appendChild(totalBox);
+    const totalClassName = `${compactScoreHud ? 'h-8 text-[10px]' : 'h-11 text-[13px]'} flex items-center justify-center font-bold text-emerald-300 bg-black`;
+    frameCells.push({ className: totalClassName, text: uiNumber(GAME.score) });
+    syncTextCells(frameBoxes, frameCells);
 
     const listContainer = document.getElementById('hud-upgrades-list');
-    listContainer.innerHTML = '';
 
     const listItems = [];
     if (GAME.activeUpgrades.goldPinChance > 0.12) listItems.push(`Gold: +${Math.round((GAME.activeUpgrades.goldPinChance-0.12)*100)}%`);
@@ -8241,16 +8318,9 @@ function updateUI() {
     if (GAME.activeUpgrades.nextThrowHookBoost < 0) listItems.push(`Next: hook ${Math.round(GAME.activeUpgrades.nextThrowHookBoost * 100)}%`);
     if (GAME.activeUpgrades.nextThrowStability > 0) listItems.push(`Next: steady`);
 
-    if (listItems.length === 0) {
-        listContainer.innerText = "None";
-    } else {
-        listItems.forEach(u => {
-            const span = document.createElement('span');
-            span.className = 'upgrade-wave text-[8px] text-emerald-400 uppercase font-bold';
-            span.innerText = `• ${u}`;
-            listContainer.appendChild(span);
-        });
-    }
+    syncTextCells(listContainer, listItems.map(item => ({
+        className: 'upgrade-wave text-[8px] text-emerald-400 uppercase font-bold', text: `• ${item}`
+    })), 'span', 'None');
 }
 
 function updateTenPinUI() {
@@ -8298,7 +8368,6 @@ function updateTenPinUI() {
     }
 
     const listContainer = document.getElementById('hud-upgrades-list');
-    listContainer.innerHTML = '';
     const items = [];
     if (GAME.tenPin.specialPinsEnabled) {
         const rackSpecialCount = GAME.tenPin.pendingRackSpecialTypes.filter(type => type && type !== 'STANDARD').length;
@@ -8314,12 +8383,9 @@ function updateTenPinUI() {
     if (GAME.activeUpgrades.nextThrowHookBoost < 0 || GAME.activeUpgrades.nextThrowStability > 0) items.push('Next throw: steady read');
     if (GAME.activeUpgrades.nextThrowFocus > 0) items.push('Next throw: focus');
     if (GAME.activeUpgrades.nextThrowPowerBoost > 0) items.push('Next throw: speed');
-    items.forEach(item => {
-        const span = document.createElement('span');
-        span.className = 'upgrade-wave text-[8px] text-emerald-400 uppercase font-bold';
-        span.innerText = `• ${item}`;
-        listContainer.appendChild(span);
-    });
+    syncTextCells(listContainer, items.map(item => ({
+        className: 'upgrade-wave text-[8px] text-emerald-400 uppercase font-bold', text: `• ${item}`
+    })), 'span');
 }
 
 function showAlert(text) {
@@ -8339,10 +8405,11 @@ function updateVisuals(dt) {
     if (ballBody && ballMesh) {
         if (GAME.state === 'BALL_ROLLING') {
             applyTimingHook(dt);
+            updateLaneHazards(dt);
             applyGutterCatch(dt);
         }
-        ballMesh.position.copy(ballBody.position);
-        ballMesh.quaternion.copy(ballBody.quaternion);
+        ballBody.position.copyTo(ballMesh.position);
+        ballBody.quaternion.copyTo(ballMesh.quaternion);
 
         const hitKillPlane = ballBody.position.y < cleanupKillY();
         const leftBackOfLane = ballBody.position.z < laneEndZ() - Number(debugState.config.render?.ballKillZPadding ?? 4);
@@ -8372,8 +8439,8 @@ function updateVisuals(dt) {
         if (pin.cleanupStarted) {
             pin.cleanupTimer += dt;
             if (pin.body) {
-                pin.mesh.position.copy(pin.body.position);
-                pin.mesh.quaternion.copy(pin.body.quaternion);
+                pin.body.position.copyTo(pin.mesh.position);
+                pin.body.quaternion.copyTo(pin.mesh.quaternion);
                 updateReflectionClone(pin.mesh, pin.reflection);
                 if (pin.body.position.y < cleanupKillY()) {
                     scoreFallenPins();
@@ -8401,14 +8468,14 @@ function updateVisuals(dt) {
                     pin.bodyRemoved = true;
                 }
                 disposeGameVisual(pin.mesh);
-                if (pin.reflection) scene.remove(pin.reflection);
+                disposePinReflection(pin);
                 reflectionObjects = reflectionObjects.filter(obj => obj.parent);
                 pin.meshRemoved = true;
             }
 
             if (pin.cleanupTimer >= 1.9 && !pin.meshRemoved) {
                 disposeGameVisual(pin.mesh);
-                if (pin.reflection) scene.remove(pin.reflection);
+                disposePinReflection(pin);
                 reflectionObjects = reflectionObjects.filter(obj => obj.parent);
                 pin.meshRemoved = true;
             }
@@ -8417,8 +8484,8 @@ function updateVisuals(dt) {
 
         if (!pin.body) continue;
 
-        pin.mesh.position.copy(pin.body.position);
-        pin.mesh.quaternion.copy(pin.body.quaternion);
+        pin.body.position.copyTo(pin.mesh.position);
+        pin.body.quaternion.copyTo(pin.mesh.quaternion);
         updateReflectionClone(pin.mesh, pin.reflection);
 
         const speed = pin.body.velocity.length();
@@ -8428,7 +8495,7 @@ function updateVisuals(dt) {
                 const origin = laneOrigin();
                 impactCamera.active = true;
                 impactCamera.elapsed = 0;
-                impactCamera.anchor.copy(pin.body.position);
+                pin.body.position.copyTo(impactCamera.anchor);
                 impactCamera.side = Math.sign(pin.body.position.x - origin.x) || Math.sign(activeHook) || 1;
             }
             const typeKey = pinTypeKey(pin.type);
@@ -8458,11 +8525,11 @@ function resetBallMotionState() {
         ballMotionState.initialized = false;
         return;
     }
-    ballMotionState.prevPos.copy(ballBody.position);
-    ballMotionState.currPos.copy(ballBody.position);
-    ballMotionState.visualPos.copy(ballBody.position);
-    ballMotionState.prevQuat.copy(ballBody.quaternion);
-    ballMotionState.currQuat.copy(ballBody.quaternion);
+    ballBody.position.copyTo(ballMotionState.prevPos);
+    ballMotionState.currPos.copy(ballMotionState.prevPos);
+    ballMotionState.visualPos.copy(ballMotionState.prevPos);
+    ballBody.quaternion.copyTo(ballMotionState.prevQuat);
+    ballMotionState.currQuat.copy(ballMotionState.prevQuat);
     ballMotionState.curveSpin = 0;
     ballMotionState.initialized = true;
 }
@@ -8490,8 +8557,8 @@ function prepareBallMotionStep() {
 
 function finishBallMotionStep() {
     if (!ballBody) return;
-    ballMotionState.currPos.copy(ballBody.position);
-    ballMotionState.currQuat.copy(ballBody.quaternion);
+    ballBody.position.copyTo(ballMotionState.currPos);
+    ballBody.quaternion.copyTo(ballMotionState.currQuat);
     ballMotionState.initialized = true;
 }
 
@@ -8636,23 +8703,7 @@ function animate() {
     }
     gauge.draw();
 
-    if (!GAME.paused) particles.forEach((p, index) => {
-        p.mesh.position.addScaledVector(p.vel, dt);
-        if (p.fade && p.mesh.material) {
-            p.mesh.material.opacity = Math.max(0, p.timer / (p.duration || 0.26)) * 0.62;
-        } else {
-            p.vel.y -= 14 * dt;
-        }
-        p.timer -= dt;
-        if(p.timer <= 0) {
-            if (p.fade) {
-                if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
-                if (p.mesh.geometry) p.mesh.geometry.dispose();
-                if (p.mesh.material) p.mesh.material.dispose();
-            }
-            particles.splice(index, 1);
-        }
-    });
+    if (!GAME.paused && particles.length) updateParticles(particles, dt);
 
     if (debugState.active) {
         updateDebugFlyCamera(dt);
@@ -8661,6 +8712,7 @@ function animate() {
     presentation?.setBall(ballMesh?.position, ballBody?.shapes?.[0]?.radius);
     presentation?.update(GAME.paused ? 0 : dt);
     updateGameplayHud();
+    updateBallBagHud();
     updateLanePolish(dt);
     updateLaneDecorationLife();
 
@@ -8688,4 +8740,112 @@ export async function bootGame() {
     finishLoadingScreen();
     startNativeShellAudio();
     animate();
+}
+
+
+function renderStarterChoices() {
+    const container = document.getElementById('starter-ball-choices');
+    container.innerHTML = starterBallIds.map((id, index) => `<label>Ball ${index + 1}<select data-starter-index="${index}" aria-label="Starter ball ${index + 1}">${STARTER_BALLS.map(ball => `<option value="${ball.id}" ${ball.id === id ? 'selected' : ''}>${ball.name} — ${BALL_TRAITS[ball.trait].name}</option>`).join('')}</select></label>`).join('') + '<small>Choose two different balls. Daily runs use Azure + Amber for everyone.</small>';
+    container.querySelectorAll('select').forEach(select => select.addEventListener('change', () => {
+        const index = Number(select.dataset.starterIndex), other = 1 - index, previous = starterBallIds[index];
+        starterBallIds[index] = select.value;
+        if (starterBallIds[other] === select.value) starterBallIds[other] = previous;
+        renderStarterChoices();
+    }));
+}
+
+function ballButtonsMarkup() {
+    return (GAME.ballLoadout?.balls || []).map((ball, index) => {
+        const starter = STARTER_BALLS.find(item => item.id === ball.id);
+        return `<button type="button" data-ball-index="${index}" aria-pressed="${GAME.ballLoadout.selected === index}" style="--ball-color:${starter.color}" title="${escapeHtml(ball.traits.map(id => BALL_TRAITS[id].desc).join(' '))}"><span class="ball-swatch" aria-hidden="true">●</span><b>${starter.name}</b><small>${ball.traits.map(id => BALL_TRAITS[id].name).join(' · ')}</small></button>`;
+    }).join('');
+}
+
+function selectLoadoutBall(index) {
+    if (!switchBall(GAME, index, gauge.stage, debugState.active)) return;
+    if (GAME.state === 'MAIN_METER') {
+        spawnBall();
+        gauge.start();
+        setPreRollCamera();
+    } else {
+        triggerShopTransition();
+    }
+    autoSaveRunSlot();
+    sfx.playTick();
+    updateBallBagHud();
+}
+
+function updateBallBagHud() {
+    const active = ['MAIN_METER', 'BALL_ROLLING', 'ROLL_SETTLING'].includes(GAME.state) && !GAME.paused && !debugState.active;
+    setIfChanged(document.getElementById('lane-modifier-label'), 'hidden', !active);
+    setIfChanged(document.getElementById('lane-modifier-label'), 'textContent', laneModifierLabel(GAME));
+    const tray = document.getElementById('ball-bag-hud');
+    setIfChanged(tray, 'hidden', !active || GAME.mode !== 'roguelike');
+    if (tray.hidden) return;
+    const bag = GAME.ballLoadout;
+    const signature = JSON.stringify(bag);
+    if (signature !== ballHudSignature) {
+        document.getElementById('ball-bag-buttons').innerHTML = ballButtonsMarkup();
+        ballHudSignature = signature;
+    }
+    const canSwap = canSwitchBall(GAME, gauge.stage, debugState.active);
+    for (const button of document.getElementById('ball-bag-buttons').querySelectorAll('button')) setIfChanged(button, 'disabled', !canSwap);
+    setIfChanged(document.getElementById('bumper-charge-label'), 'textContent', `BUMPERS • ${migrateBumperCharges(GAME.activeUpgrades)} shared impacts`);
+}
+
+function applyLoadoutBallSkin(mesh, radius) {
+    const ball = selectedBall(GAME);
+    if (!ball) return;
+    const starter = STARTER_BALLS.find(item => item.id === ball.id);
+    // Tint only the sphere body, preserving the finger holes and shared textures.
+    mesh.traverse(child => {
+        if (child.geometry?.type !== 'SphereGeometry' || !child.material?.color) return;
+        child.material.color.set(starter.color);
+        if (child.material.emissive) {
+            child.material.emissive.set(starter.color);
+            child.material.emissiveIntensity = 0.08 + ball.traits.length * 0.035;
+        }
+    });
+    // Up to four readable bands. No throw-time geometry or particle churn.
+    const colors = ball.traits.map(id => BALL_TRAITS[id].color);
+    if (GAME.activeUpgrades.ballMass > 12) colors.push('#d7e8fa');
+    if (GAME.activeUpgrades.spinPower > 0) colors.push('#a99bff');
+    if (GAME.activeUpgrades.ballSize > 1) colors.push('#6fe5e6');
+    colors.forEach((color, index) => {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(radius * 1.012, radius * 0.022, 5, 32), new THREE.MeshBasicMaterial({ color }));
+        band.rotation.set(Math.PI / 2 + index * 0.38, index * 0.55, 0);
+        mesh.add(band);
+    });
+}
+
+function updateLaneHazards(dt) {
+    throwElapsed += dt;
+    const origin = laneOrigin(), radius = ballBody.shapes[0].radius || 0.49;
+    const localX = ballBody.position.x - origin.x;
+    rearmBumperContacts(bumperContacts, localX, LANE.currentWidth / 2, radius);
+    // Remove depleted guards after Rapier finishes dispatching the contact batch.
+    if (gutterGuardsArray.length && migrateBumperCharges(GAME.activeUpgrades) === 0) toggleGutterGuards(false);
+    for (const guard of gutterGuardsArray) {
+        guard.flash = Math.max(0, guard.flash - dt);
+        guard.mesh.material.emissiveIntensity = 0.35 + guard.flash * 4;
+    }
+    if (ballBody.position.z < laneEndZ() || ballBody.position.z > ballStartZ() || ballBody.position.y < origin.y - 0.1) return;
+    ballBody.velocity.x += gutterMawDelta({ route: GAME.currentRoute, rolling: GAME.state === 'BALL_ROLLING', elapsed: throwElapsed, localX, halfWidth: LANE.currentWidth / 2, velocityX: ballBody.velocity.x, resistance: activeThrowMods.resistance || 0, dt });
+    mawVisuals?.update(throwElapsed);
+}
+
+function clearGameplayLaneEffects() {
+    mawVisuals?.dispose();
+    mawVisuals = null;
+    toggleGutterGuards(false);
+    bumperContacts = createBumperContacts();
+    throwElapsed = 0;
+}
+
+function syncMawVisuals() {
+    mawVisuals?.dispose();
+    mawVisuals = null;
+    if (!isGutterMawRoute(GAME.currentRoute)) return;
+    const metrics = gutterChannelMetrics(LANE.currentWidth);
+    mawVisuals = createMawVisuals(THREE, scene, { origin: laneOrigin(), length: laneLength(), gutterX: metrics.visualWidth / 2 + metrics.gutterWidth * 0.5 });
 }

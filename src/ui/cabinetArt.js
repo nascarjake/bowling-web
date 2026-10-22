@@ -1,4 +1,4 @@
-import { shopArtwork } from './shopArt.js?v=20261019h';
+import { shopArtwork } from './shopArt.js?v=0.3.0';
 
 const reward = (value, label, duration = 'THIS RUN') => ({ value, label, duration });
 const EVENTS = {
@@ -25,7 +25,7 @@ export function eventChoiceVisual(id, index, context = {}) {
             { art: 'dampener_rings', gains: [reward('+16%', 'SPECIAL PIN CONTROL')], note: 'Smoother, wider special-pin forces.' }
         ],
         league_night: [
-            { art: 'gutters', gains: [reward('GUARDS', 'GUTTER PROTECTION', 'NEXT FRAME'), reward('+4', 'PIN DOLLARS', 'RIGHT NOW')], note: 'Keep the next frame on the lane.' },
+            { art: 'gutters', gains: [reward('+3', 'BUMPER IMPACTS'), reward('+4', 'PIN DOLLARS', 'RIGHT NOW')], note: 'Shared by both sides. Lasts until spent.' },
             { art: 'steer_ball', gains: [reward('+0.65', 'STEERING POWER')], note: 'Guide your roll with A / D or the arrows.' }
         ],
         lost_ball_return: [

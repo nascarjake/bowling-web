@@ -31,24 +31,37 @@ export function createRapierCannonShim(RAPIER) {
             else this.owner.raw.setTranslation(v, true);
             return this;
         }
-        copy(source) { return this.set(source.x, source.y, source.z); }
+        copy(source) {
+            const value = source instanceof Vec3 ? source._read() : source;
+            return this.set(value.x, value.y, value.z);
+        }
+        // Three.Vector3.copy reads x/y/z separately, crossing into Rapier three
+        // times. Read one current native value and copy into a reusable target.
+        copyTo(target) {
+            const value = this._read();
+            return target.set(value.x, value.y, value.z);
+        }
         clone() { const v = this._read(); return new Vec3(v.x, v.y, v.z); }
         length() { const v = this._read(); return Math.hypot(v.x, v.y, v.z); }
         distanceTo(other) {
             const a = this._read();
-            return Math.hypot(a.x - other.x, a.y - other.y, a.z - other.z);
+            const b = other instanceof Vec3 ? other._read() : other;
+            return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
         }
         vsub(other, target = new Vec3()) {
             const a = this._read();
-            target.set(a.x - other.x, a.y - other.y, a.z - other.z);
+            const b = other instanceof Vec3 ? other._read() : other;
+            target.set(a.x - b.x, a.y - b.y, a.z - b.z);
             return target;
         }
         normalize() {
-            const len = this.length() || 1;
-            return this.set(this.x / len, this.y / len, this.z / len);
+            const value = this._read();
+            const len = Math.hypot(value.x, value.y, value.z) || 1;
+            return this.set(value.x / len, value.y / len, value.z / len);
         }
         scale(factor, target = new Vec3()) {
-            target.set(this.x * factor, this.y * factor, this.z * factor);
+            const value = this._read();
+            target.set(value.x * factor, value.y * factor, value.z * factor);
             return target;
         }
     }
@@ -61,6 +74,12 @@ export function createRapierCannonShim(RAPIER) {
         get y() { return this.owner?.raw ? this.owner.raw.rotation().y : this._y; }
         get z() { return this.owner?.raw ? this.owner.raw.rotation().z : this._z; }
         get w() { return this.owner?.raw ? this.owner.raw.rotation().w : this._w; }
+        copyTo(target) {
+            const value = this.owner?.raw ? this.owner.raw.rotation() : {
+                x: this._x, y: this._y, z: this._z, w: this._w
+            };
+            return target.set(value.x, value.y, value.z, value.w);
+        }
         setFromAxisAngle(axis, angle) {
             const half = angle / 2;
             const s = Math.sin(half);
@@ -135,7 +154,11 @@ export function createRapierCannonShim(RAPIER) {
                 true
             );
         }
-        applyForce(force) { this.raw?.addForce({ x: force.x, y: force.y, z: force.z }, true); }
+        applyForce(force) {
+            if (!this.raw) return;
+            this.raw.addForce({ x: force.x, y: force.y, z: force.z }, true);
+            this.world.forcedBodies.add(this);
+        }
     }
 
     function colliderDescForShape(shape) {
@@ -164,6 +187,7 @@ export function createRapierCannonShim(RAPIER) {
             this.raw = new RAPIER.World(gravity);
             this.eventQueue = new RAPIER.EventQueue(true);
             this.bodiesByCollider = new Map();
+            this.forcedBodies = new Set();
             this.gravity = new Vec3(gravity.x, gravity.y, gravity.z);
             const originalSet = this.gravity.set.bind(this.gravity);
             this.gravity.set = (x, y, z) => {
@@ -188,6 +212,7 @@ export function createRapierCannonShim(RAPIER) {
                 desc.setAngularDamping(body.angularDamping || 0);
                 if (body.ccdEnabled) desc.setCcdEnabled(true);
             }
+            body.colliderHandles = [];
             body.raw = this.raw.createRigidBody(desc);
             body.world = this;
             const weights = body.shapeMassWeights?.length === body.shapes.length
@@ -202,16 +227,20 @@ export function createRapierCannonShim(RAPIER) {
                 colliderDesc = colliderDesc.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
                 const collider = this.raw.createCollider(colliderDesc, body.raw);
                 this.bodiesByCollider.set(collider.handle, body);
+                body.colliderHandles.push(collider.handle);
             });
             if (body.sleepRequested) body.raw.sleep();
         }
         remove(body) {
-            if (!body?.raw) return;
+            if (!body?.raw || body.world !== this) return;
+            this.forcedBodies.delete(body);
             this.raw.removeRigidBody(body.raw);
-            for (const [handle, mappedBody] of this.bodiesByCollider.entries()) {
-                if (mappedBody === body) this.bodiesByCollider.delete(handle);
-            }
+            // Each pin owns six collider handles. Removing only those handles
+            // keeps full-rack teardown linear instead of scanning the world per pin.
+            for (const handle of body.colliderHandles) this.bodiesByCollider.delete(handle);
+            body.colliderHandles.length = 0;
             body.raw = null;
+            body.world = null;
         }
         addContactMaterial() {}
         step(timeStep) {
@@ -219,9 +248,13 @@ export function createRapierCannonShim(RAPIER) {
             this.raw.step(this.eventQueue);
             // Cannon forces last one step; Rapier forces persist until cleared.
             // Without this, hook/steering forces accumulate throughout a throw.
-            this.raw.forEachRigidBody(body => {
-                if (body.isDynamic()) body.resetForces(false);
-            });
+            // Only Body.applyForce creates persistent forces through this API.
+            // Pin impulses do not. Clear each touched body once, after its step;
+            // collision callbacks below may enqueue forces for the next step.
+            for (const body of this.forcedBodies) {
+                if (body.raw?.isDynamic()) body.raw.resetForces(false);
+            }
+            this.forcedBodies.clear();
             const reportedPairs = new Set();
             this.eventQueue.drainCollisionEvents((h1, h2, started) => {
                 if (!started) return;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pinfall</title>
+    <meta name="application-version" content="0.3.0">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for Retro Style -->
@@ -14,13 +15,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
-    <link rel="stylesheet" href="./styles/base.css">
-    <link rel="stylesheet" href="./styles/ui.css">
-    <link rel="stylesheet" href="./styles/debug.css">
-    <link rel="stylesheet" href="./styles/presentation.css?v=20261019c">
-    <link rel="stylesheet" href="./styles/arcade.css?v=20261019f">
-    <link rel="stylesheet" href="./styles/proshop.css?v=20261019g2">
-    <link rel="stylesheet" href="./styles/cabinet.css?v=20261019i">
+    <link rel="stylesheet" href="./styles/base.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/ui.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/debug.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/presentation.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/arcade.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/proshop.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/cabinet.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/gameplay.css?v=0.3.0">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -100,6 +102,7 @@
         <!-- Top Stats Bar -->
         <div class="flex justify-between items-start w-full gap-4">
             <!-- Frame and Score Tracker -->
+            <div class="score-bag-stack">
             <div id="score-hud-panel" class="hud-panel hud-breathe border-4 p-3 rounded-lg flex flex-col gap-2 pointer-events-auto max-w-[320px] cursor-pointer">
                 <div class="flex justify-between gap-4 text-[10px] text-white">
                     <span><span id="hud-frame-label">ROUND</span> <span id="hud-frame" class="text-yellow-300 text-sm">1</span></span>
@@ -115,6 +118,9 @@
                 </div>
             </div>
 
+            <div id="lane-modifier-label" hidden></div>
+            <aside id="ball-bag-hud" hidden aria-label="Ball bag"><div id="ball-bag-buttons"></div><small id="bumper-charge-label"></small></aside>
+            </div>
             <!-- Pin / Cash Bank -->
             <div class="hud-panel hud-breathe border-4 border-yellow-500 p-3 rounded-lg flex items-center gap-3 pointer-events-auto">
                 <div class="text-center">
@@ -335,6 +341,7 @@
                     <span>Selected Relic</span>
                     <div id="selected-relic-art" class="selected-relic-art" aria-hidden="true"></div><strong id="selected-relic-label">Last Frame Token</strong>
                     <p id="selected-relic-desc">Once per run, if you fail a target, you get one emergency extra roll.</p>
+                    <fieldset class="starter-balls"><legend>Choose your two-ball bag</legend><p>Azure drives harder. Amber widens timing. Jade resists black holes.</p><div id="starter-ball-choices"></div></fieldset>
                     <label class="seed-entry">
                         <span>Run Seed</span>
                         <input id="run-seed-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Type anything, or leave blank">
@@ -493,6 +500,8 @@
                 <span class="debug-action-key">O CLOSE</span>
             </div>
             <div class="debug-action-grid">
+                <button data-debug-action="gameplayLab">Ball Traits + Bumper Shop (+$100)</button>
+                <button data-debug-action="gutterMaw">Gutter Maw Gameplay Test</button>
                 <button data-debug-action="shop">Skip To Shop</button>
                 <button data-debug-action="winFrame">Clear Frame</button>
                 <button data-debug-action="pocketShot">Clean Center Shot</button>
@@ -595,6 +604,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=20261019h"></script>
+    <script type="module" src="./src/main.js?v=0.3.0"></script>
 </body>
 </html>

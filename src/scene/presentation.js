@@ -1,4 +1,6 @@
-import { districtForStage, routeTheme } from '../ui/routeArt.js?v=20261019f';
+import { createSharedGeometryPool } from './sharedGeometry.js?v=0.3.0';
+import { createPinGeometry } from './pinGeometry.js?v=0.3.0';
+import { districtForStage, routeTheme } from '../ui/routeArt.js?v=0.3.0';
 
 // Presentation for a single, continuously widening lane. Dimensions are in world
 // units: boards, trim, and light fixtures retain their scale as the rack grows.
@@ -63,6 +65,7 @@ export function createLanePresentation(scene, renderer) {
     const wood = woodTexture();
     const rough = woodTexture(true);
     const effects = [];
+    const pinGeometries = createSharedGeometryPool();
     let surfaceY = 0;
     let laneWidth = 5;
     let laneCenter = 0;
@@ -428,6 +431,8 @@ export function createLanePresentation(scene, renderer) {
 
     return {
         environment, rebuild, impact,
+        retainGeometry: mesh => pinGeometries.retain(mesh),
+        releaseGeometry: mesh => pinGeometries.release(mesh),
         setVisible(value) { root.visible = value; },
         setBall(position, radius = .49) {
             contact.visible = Boolean(position) && Math.abs(position.x - laneCenter) < laneWidth / 2;
@@ -460,14 +465,11 @@ export function createLanePresentation(scene, renderer) {
             }
         },
         createPin(type, radius, height, standard) {
-            const profile = [[0, 0], [.6, 0], [.7, .05], [.91, .18], [1, .3], [.92, .42], [.64, .55], [.4, .66], [.39, .76], [.53, .84], [.55, .9], [.4, .97], [0, 1]];
-            const points = profile.map(([x, y]) => new T.Vector2(x * radius, (y - 0.5) * height));
-            const geometry = new T.LatheGeometry(points, 24);
-            const uv = geometry.attributes.uv, pos = geometry.attributes.position;
-            for (let i = 0; i < uv.count; i++) uv.setY(i, pos.getY(i) / height + 0.5);
+            const geometry = pinGeometries.get(`${radius}:${height}`, () => createPinGeometry(T, radius, height));
             const material = new T.MeshPhysicalMaterial({ map: standard ? pinTexture : specialTexture, color: standard ? 0xffffff : type.color, roughness: 0.24, metalness: type.name === 'Gold' ? 0.5 : 0, clearcoat: 0.65, clearcoatRoughness: 0.2, envMapIntensity: 0.7 });
             material.color.convertSRGBToLinear();
             const mesh = new T.Mesh(geometry, material);
+            pinGeometries.retain(mesh);
             mesh.castShadow = mesh.receiveShadow = true;
             return mesh;
         },

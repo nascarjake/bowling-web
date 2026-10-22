@@ -1,6 +1,8 @@
+import { createBallLoadout } from '../game/ballLoadout.js?v=0.3.0';
 export const GAME = {
     state: 'TITLE', // TITLE, MAIN_METER, BALL_ROLLING, ROLL_SETTLING, ROUND_OVER, SHOP, GAMEOVER
     mode: 'roguelike',
+    ballLoadout: createBallLoadout(),
     paused: false,
     pauseBlockedState: null,
     frame: 1,
@@ -44,7 +46,8 @@ export const GAME = {
         nextThrowHookDelay: 0,
         nextThrowStability: 0,
         nextThrowCashMultiplier: 1,
-        gutterGuards: false
+        gutterGuards: false,
+        bumperCharges: 0
     },
     runModifiers: {
         pinCashMultipliers: {},

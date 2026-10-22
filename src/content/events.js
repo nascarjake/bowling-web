@@ -1,4 +1,5 @@
-import { GAME } from '../core/state.js';
+import { addBumperCharges } from '../game/laneHazards.js?v=0.3.0';
+import { GAME } from '../core/state.js?v=0.3.0';
 
 export const EVENT_TYPES = [
     {
@@ -56,9 +57,9 @@ export const EVENT_TYPES = [
         choices: [
             {
                 title: 'Borrow Bumpers',
-                desc: 'Gain bumper guards for the next frame and +4 Pin Dollars.',
+                desc: 'Gain 3 shared bumper impact charges and +4 Pin Dollars. Charges persist until spent.',
                 apply: () => {
-                    GAME.activeUpgrades.gutterGuards = true;
+                    addBumperCharges(GAME.activeUpgrades);
                     GAME.cash += 4;
                 }
             },

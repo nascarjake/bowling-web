@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAME } from '../src/core/state.js';
-import { EVENT_TYPES } from '../src/content/events.js';
-import { EVENT_IDS, eventVisual, eventChoiceVisual, eventSceneArt } from '../src/ui/cabinetArt.js';
+import { GAME } from '../src/core/state.js?v=0.3.0';
+import { EVENT_TYPES } from '../src/content/events.js?v=0.3.0';
+import { EVENT_IDS, eventVisual, eventChoiceVisual, eventSceneArt } from '../src/ui/cabinetArt.js?v=0.3.0';
 
 const number = value => Number(value.replace('−', '-').replace(/[^0-9.+-]/g, ''));
 const effects = {
@@ -13,7 +13,8 @@ const effects = {
     'SPECIAL PIN CONTROL': ['specialControl', 100],
     'STEERING POWER': ['spinPower', 1],
     'BALL WEIGHT': ['ballMass', 1],
-    'FUTURE TARGETS': ['targetTax', 1]
+    'FUTURE TARGETS': ['targetTax', 1],
+    'BUMPER IMPACTS': ['bumperCharges', 1]
 };
 
 test('every event and choice has a complete visual preview', () => {
@@ -43,8 +44,7 @@ test('displayed event rewards and catches match the actual game effects', () => 
                     const [field, scale] = effects[gain.label];
                     const delta = field === 'cash' ? GAME.cash - before.cash : GAME.activeUpgrades[field] - before.activeUpgrades[field];
                     assert.ok(Math.abs(number(gain.value) - delta * scale) < 1e-8, `${event.id}/${index}: ${gain.label}`);
-                } else if (gain.label === 'GUTTER PROTECTION') assert.equal(GAME.activeUpgrades.gutterGuards, true);
-                else if (gain.label === 'GOLD PIN CASH') assert.equal(GAME.runModifiers.pinCashMultipliers.GOLD / (before.runModifiers.pinCashMultipliers.GOLD || 1), number(gain.value));
+                } else if (gain.label === 'GOLD PIN CASH') assert.equal(GAME.runModifiers.pinCashMultipliers.GOLD / (before.runModifiers.pinCashMultipliers.GOLD || 1), number(gain.value));
                 else if (gain.label === 'TNT EXPLOSIONS') assert.equal(GAME.runModifiers.disabledPinEffects.EXPLOSIVE, true);
                 else assert.fail(`Unverified reward: ${gain.label}`);
             }
@@ -60,5 +60,5 @@ test('information costs reflect available cash and target relief respects its fl
     assert.equal(eventChoiceVisual('lost_ball_return', 0, { targetTax: -9 }).gains[1].value, '−1');
     assert.equal(eventChoiceVisual('lost_ball_return', 0, { targetTax: -10 }).gains[1].value, 'AT MIN');
     assert.equal(eventChoiceVisual('mechanic', 0).gains[0].duration, 'NEXT THROW');
-    assert.equal(eventChoiceVisual('league_night', 0).gains[0].duration, 'NEXT FRAME');
+    assert.equal(eventChoiceVisual('league_night', 0).gains[0].duration, 'THIS RUN');
 });

@@ -1,6 +1,10 @@
 // The pro shop displays the effect first. Complete mechanics stay in Inspect.
 const entry = (kind, color, value, label, summary, duration = 'THIS RUN') => ({ kind, color, value, label, summary, duration });
 const RUN_GEAR = {
+    ball_trait_drive: entry('core', '#71d9ff', '+1.8', 'SELECTED BALL MASS', 'More carry on your selected ball.'),
+    ball_trait_focus: entry('tape', '#ffbd69', '+.012', 'SELECTED BALL TIMING', 'A cleaner release on your selected ball.'),
+    ball_trait_pearl: entry('pearl', '#ef9bff', '+25%', 'SELECTED BALL HOOK', 'A later, stronger finish on your selected ball.'),
+    ball_trait_anchor: entry('urethane', '#78edbc', '−45%', 'GUTTER MAW PULL', 'Resist black holes on your selected ball.'),
     gold_pins: entry('gold', '#f2d079', '+10%', 'GOLD PIN CHANCE', 'More gold in every rack.'),
     explosive_pins: entry('explosive', '#ff9478', '+7%', 'TNT PIN CHANCE', 'Give nearby pins a blast.'),
     implosive_pins: entry('implosive', '#c5a1ff', '+7%', 'GRAVITY PIN CHANCE', 'Pull clusters together.'),
@@ -10,7 +14,7 @@ const RUN_GEAR = {
     extra_roll: entry('reserve', '#93e8c2', '+1', 'THROW / FRAME', 'One more chance every frame.'),
     bouncy_pins: entry('bouncy', '#91e1b1', '+10%', 'BOUNCY PIN CHANCE', 'More bounce. Messier carry.'),
     multiplier: entry('score', '#ffd58b', '+12%', 'PIN SCORE', 'Make every knockdown count.'),
-    gutters: entry('guards', '#ffac87', 'GUARDS', 'GUTTER PROTECTION', 'Keep the next frame in play.', 'NEXT FRAME'),
+    gutters: entry('guards', '#ffac87', '+3', 'SHARED IMPACT CHARGES', 'Either side spends one. Buy again to stack.'),
     thumb_tape: entry('tape', '#a5e6c6', '+TIMING', 'CLEAN RELEASE WINDOW', 'A little more room to hit gold.'),
     dampener_rings: entry('rings', '#e0bb82', 'SMOOTHER', 'SPECIAL PIN FORCES', 'Wider, calmer special-pin effects.'),
     lane_read: entry('notes', '#a7baf0', 'STEER +', 'TIMING ASSIST', 'Small corrections. Cleaner releases.'),

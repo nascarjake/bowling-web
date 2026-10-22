@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SHOP_UPGRADES } from '../src/content/shopUpgrades.js';
-import { TENPIN_SHOP_ITEMS } from '../src/content/tenpinShop.js';
-import { shopVisual, shopOfferState, shopArtwork } from '../src/ui/shopArt.js';
+import { SHOP_UPGRADES } from '../src/content/shopUpgrades.js?v=0.3.0';
+import { TENPIN_SHOP_ITEMS } from '../src/content/tenpinShop.js?v=0.3.0';
+import { shopVisual, shopOfferState, shopArtwork } from '../src/ui/shopArt.js?v=0.3.0';
 
 test('every purchasable item has an illustrated identity and a concise effect', () => {
     for (const item of [...SHOP_UPGRADES, ...TENPIN_SHOP_ITEMS]) {
@@ -19,7 +19,7 @@ test('classic pins, setup and ball consumables show their actual lifetimes', () 
     for (const item of TENPIN_SHOP_ITEMS) {
         assert.equal(shopVisual(item).duration, item.typeKey ? 'THIS RACK' : item.id === 'manual_rack' ? 'NEXT FRAME' : 'NEXT THROW', item.id);
     }
-    assert.equal(shopVisual({ id: 'gutters' }).duration, 'NEXT FRAME');
+    assert.equal(shopVisual({ id: 'gutters' }).duration, 'THIS RUN');
     assert.equal(shopVisual({ id: 'extra_roll' }).duration, 'THIS RUN');
 });
 

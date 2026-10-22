@@ -1,4 +1,6 @@
-import { GAME } from '../core/state.js';
+import { BALL_TRAITS, addBallTrait } from '../game/ballLoadout.js?v=0.3.0';
+import { addBumperCharges } from '../game/laneHazards.js?v=0.3.0';
+import { GAME } from '../core/state.js?v=0.3.0';
 
 function applyOneThrowBallUpgrade(kind) {
     const upgrades = GAME.activeUpgrades;
@@ -22,6 +24,12 @@ function applyOneThrowBallUpgrade(kind) {
 }
 
 export const SHOP_UPGRADES = [
+    ...Object.entries(BALL_TRAITS).map(([id, trait]) => ({
+        id: `ball_trait_${id}`, traitId: id, name: trait.name, category: 'BALL',
+        desc: `${trait.desc} Permanent on the selected ball only. Each ball can own this trait once.`,
+        cost: id === 'focus' ? 7 : 9,
+        effect: () => addBallTrait(GAME, id)
+    })),
     {
         id: 'gold_pins',
         name: 'Midas Pin Formula',
@@ -96,11 +104,12 @@ export const SHOP_UPGRADES = [
     },
     {
         id: 'gutters',
-        name: 'Temporary Bumper Guards',
-        category: 'ONE THROW',
-        desc: 'Equips secure visual bumpers to the sides for the next frame only!',
+        name: 'Charged Bumper Guards',
+        category: 'CONSISTENCY',
+        repeatable: true,
+        desc: 'Add 3 shared bumper impacts to your run. Either side spends one charge per contact. Repeat purchases stack +3.',
         cost: 6,
-        effect: () => { GAME.activeUpgrades.gutterGuards = true; }
+        effect: () => addBumperCharges(GAME.activeUpgrades)
     },
     {
         id: 'thumb_tape',

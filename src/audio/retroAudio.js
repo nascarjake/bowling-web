@@ -1,3 +1,14 @@
+// Explicitly release a transient graph only after all its scheduled sources
+// finish. Shared gain nodes (the two-oscillator strike chord) stay connected
+// until the last source ends; envelopes and scheduled times are untouched.
+function releaseAudioGraphOnEnd(sources, nodes) {
+    let remaining = sources.length;
+    for (const source of sources) source.addEventListener('ended', () => {
+        source.disconnect();
+        if (--remaining === 0) nodes.forEach(node => node.disconnect());
+    }, { once: true });
+}
+
 export class RetroAudio {
     constructor() {
         this.ctx = null;
@@ -153,12 +164,15 @@ export class RetroAudio {
         this.activePinSounds++;
         this.pinSoundsThisWindow++;
         this.lastPinSoundAt = now;
-        sound.addEventListener('ended', () => {
+        let released = false;
+        const release = () => {
+            if (released) return;
+            released = true;
+            for (const event of ['ended', 'error', 'abort']) sound.removeEventListener(event, release);
             this.activePinSounds = Math.max(0, this.activePinSounds - 1);
-        }, { once: true });
-        sound.play().catch(() => {
-            this.activePinSounds = Math.max(0, this.activePinSounds - 1);
-        });
+        };
+        for (const event of ['ended', 'error', 'abort']) sound.addEventListener(event, release, { once: true });
+        sound.play().catch(release);
     }
 
     playCoin() {
@@ -167,16 +181,17 @@ export class RetroAudio {
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
+        
         osc.type = 'square';
         osc.frequency.setValueAtTime(587.33, now); // D5
         osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
-
+        
         gain.gain.setValueAtTime(0.04 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
+        
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        releaseAudioGraphOnEnd([osc], [gain]);
         osc.start(now);
         osc.stop(now + 0.25);
     }
@@ -187,16 +202,17 @@ export class RetroAudio {
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
+        
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(140, now);
         osc.frequency.exponentialRampToValueAtTime(35, now + 0.12);
-
+        
         gain.gain.setValueAtTime(0.12 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
+        
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        releaseAudioGraphOnEnd([osc], [gain]);
         osc.start(now);
         osc.stop(now + 0.15);
     }
@@ -211,23 +227,25 @@ export class RetroAudio {
         for (let i = 0; i < bufferSize; i++) {
             data[i] = Math.random() * 2 - 1;
         }
-
+        
         const noiseNode = this.ctx.createBufferSource();
         noiseNode.buffer = buffer;
-
+        
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(700, now);
         filter.frequency.linearRampToValueAtTime(40, now + 0.3);
-
+        
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.25 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
+        
         noiseNode.connect(filter);
         filter.connect(gain);
         gain.connect(this.ctx.destination);
-
+        
+        // A BiquadFilter can ring after the buffer ends. Keep its original
+        // tail lifetime until audible/runtime validation can justify cleanup.
         noiseNode.start(now);
         noiseNode.stop(now + 0.4);
     }
@@ -238,16 +256,17 @@ export class RetroAudio {
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
+        
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(60, now);
         osc.frequency.linearRampToValueAtTime(380, now + 0.25);
-
+        
         gain.gain.setValueAtTime(0.12 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
+        
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        releaseAudioGraphOnEnd([osc], [gain]);
         osc.start(now);
         osc.stop(now + 0.25);
     }
@@ -258,15 +277,16 @@ export class RetroAudio {
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
+        
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1000, now);
-
+        
         gain.gain.setValueAtTime(0.03 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
+        
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        releaseAudioGraphOnEnd([osc], [gain]);
         osc.start(now);
         osc.stop(now + 0.04);
     }
@@ -278,26 +298,27 @@ export class RetroAudio {
         const osc1 = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
+        
         osc1.type = 'square';
         osc2.type = 'triangle';
-
+        
         osc1.frequency.setValueAtTime(261.63, now); // C4
         osc1.frequency.setValueAtTime(329.63, now + 0.08); // E4
         osc1.frequency.setValueAtTime(392.00, now + 0.16); // G4
         osc1.frequency.setValueAtTime(523.25, now + 0.24); // C5
-
+        
         osc2.frequency.setValueAtTime(130.81, now);
         osc2.frequency.setValueAtTime(164.81, now + 0.08);
         osc2.frequency.setValueAtTime(196.00, now + 0.16);
-
+        
         gain.gain.setValueAtTime(0.12 * this.scaledVolume('effects'), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-
+        
         osc1.connect(gain);
         osc2.connect(gain);
         gain.connect(this.ctx.destination);
-
+        
+        releaseAudioGraphOnEnd([osc1, osc2], [gain]);
         osc1.start(now);
         osc2.start(now);
         osc1.stop(now + 0.5);
