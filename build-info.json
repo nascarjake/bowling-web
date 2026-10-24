@@ -1,7 +1,7 @@
 {
-  "version": "0.3.0",
-  "sourceCommit": "0c65051b2ee39031f520df615ffa4f71dad57456",
-  "builtAt": "2026-10-22T20:37:14.984Z",
+  "version": "0.4.0",
+  "sourceCommit": "78bb59775e07c2e3674e6b69132cd01833c40438",
+  "builtAt": "2026-10-24T07:17:42.898Z",
   "entry": "index.html",
   "files": {
     ".nojekyll": {
@@ -89,8 +89,8 @@
       "sha256": "677cb6bab6e02f15723faf24762d1f68bff42923fc6d5a94f53b49732b09cdc4"
     },
     "index.html": {
-      "bytes": 48178,
-      "sha256": "d5df4b770c0232d0e94054c73e27d463dfa7dd0397baf13f476b4a16fe1cdc14"
+      "bytes": 48215,
+      "sha256": "a486819553179f9c941fc389d5c10c8cf14fcd238d6d64a7b31a999d3a7210f2"
     },
     "music1.mp3": {
       "bytes": 4621117,
@@ -128,6 +128,18 @@
       "bytes": 10361,
       "sha256": "8d1381c824c1e217808f7d40660b3a730ac23166b7801f4eb7835ec6302ec3c2"
     },
+    "src/assets/balls/amber.png": {
+      "bytes": 53807,
+      "sha256": "01ce887f1ec214190d7ea8928ee5a6d7bfb30a960bc8b0abac7110da33f5d58f"
+    },
+    "src/assets/balls/azure.png": {
+      "bytes": 63222,
+      "sha256": "4ff0a28538cf7f929d123add9ac97d5aa080203e3f93fb9c9dc331008656d327"
+    },
+    "src/assets/balls/jade.png": {
+      "bytes": 61560,
+      "sha256": "b146f840bac16a13cc3320a2a17cbd0732a029217948754e32bf505abe29286c"
+    },
     "src/assets/branding/goose-games-logo.png": {
       "bytes": 467186,
       "sha256": "2206d24b98b0152c40da714e126449017dd9573e70431fd3092e2d654b193591"
@@ -138,23 +150,23 @@
     },
     "src/content/events.js": {
       "bytes": 5815,
-      "sha256": "19ed3691c9fc3df05325c360065515806102b01f7d6b108fe501890e7c022ed4"
+      "sha256": "ea5eb5cf35faf056f459ef6bbde3e70a5be9725101c60a2af0a5d4a9689b3872"
     },
     "src/content/pinTypes.js": {
       "bytes": 527,
       "sha256": "25808555d1e0af411058e6454abe0442ed9b97c4401ee588165975b45f15fd9f"
     },
     "src/content/routes.js": {
-      "bytes": 6013,
-      "sha256": "63adadd7f51c36cb45c4c35f09200291177da972398bf888303b7b90491e51af"
+      "bytes": 6122,
+      "sha256": "ff50b77dad9073f9651deddb31a8ff3d061978e480ba8356c3cfcda93a24e4b6"
     },
     "src/content/shopUpgrades.js": {
-      "bytes": 8405,
-      "sha256": "7465c82ba2884907308a323705255ba25388fc4973c35513f9ece0ad36ebdd33"
+      "bytes": 8426,
+      "sha256": "cfce5b5551e50955bdb4ec86e7915ae9f0cae894376579a9db3276efab8045a3"
     },
     "src/content/tenpinShop.js": {
       "bytes": 3314,
-      "sha256": "0480cf7158a25e51a1c8e92b22db8b22bfe2e7276a977c44cd279feb4280b3c3"
+      "sha256": "72cf06ecd79ed0016d1b6c16f2ea99b6f20510eb530c872face0390d0f859b78"
     },
     "src/content/vocabulary.js": {
       "bytes": 2908,
@@ -166,19 +178,19 @@
     },
     "src/core/state.js": {
       "bytes": 2483,
-      "sha256": "6e858db8c8d6f810b2f3f955beb36db98f7fd936368dd2164f548749673d511f"
+      "sha256": "18dd216bd488e0a707bf89fbe433d5dc5bd96012537f85b69b903e61f5ddbcb5"
     },
     "src/debug/defaultConfig.js": {
       "bytes": 7871,
       "sha256": "53e0f972ac67087c5f0df71c34c580a8f2398a0d844094a00b39a0e6a1ea55d4"
     },
     "src/game/app.js": {
-      "bytes": 415782,
-      "sha256": "92f0dd34fe885015fe7c2f8c350671ea8aa6a1c00c86712467087694bd9392f7"
+      "bytes": 419186,
+      "sha256": "18caaafd2ab3a00acddcfdd2f11686ef6dfd1196a2b5c4e0b6e796dbd6a6ca3c"
     },
     "src/game/ballLoadout.js": {
-      "bytes": 3530,
-      "sha256": "6c30d1d4da962981f59c4d13fe6f3bdfce241f1c0cc050ea1ff29fa562293084"
+      "bytes": 3613,
+      "sha256": "da3afdf90331cf5333a7f8a7465288ed8bf755d6e609e13d8c5e0dfd109f00d0"
     },
     "src/game/laneHazards.js": {
       "bytes": 2418,
@@ -190,11 +202,11 @@
     },
     "src/main.js": {
       "bytes": 1408,
-      "sha256": "0fabfa622c719441f36c08d4f066a9f28ed668357cc2d6fa8f12070f388ceb34"
+      "sha256": "737c2601457db86e098e0e497401f930bcb890655723187520c9d51183288759"
     },
     "src/physics/rapierShim.js": {
-      "bytes": 13053,
-      "sha256": "19ef6e8fdbbb94a85d64df057d7a4cbcc99ff7fc6a5c9989185e9b92e9f858b9"
+      "bytes": 13520,
+      "sha256": "f19e570dc73594fc74c132b028938e38120cab262e35bb98c68bde006f8e333e"
     },
     "src/physics/world.js": {
       "bytes": 90,
@@ -203,6 +215,10 @@
     "src/scene/assets.js": {
       "bytes": 1897,
       "sha256": "ff8ff2afdb2d7ca0c232e781b37c2f40e64a736a050e8ef641142aec25f8bd03"
+    },
+    "src/scene/ballSurface.js": {
+      "bytes": 380,
+      "sha256": "869869937a832a09e4f22f61058d3f8d307ea04a324747b698ba72cb2afde51f"
     },
     "src/scene/gameplayVisuals.js": {
       "bytes": 1212,
@@ -217,8 +233,8 @@
       "sha256": "989e9b5315a63b8e385f3ae7f6442d5b8edf6c524a0e004105083cc03bc3bf56"
     },
     "src/scene/presentation.js": {
-      "bytes": 26746,
-      "sha256": "9f866084d4ccac9188bbdbab9ca18d135cc65db899168616053e22a050d28297"
+      "bytes": 26892,
+      "sha256": "100cf852917a4bd05b0cf38348c8cf35f79b5cf77fcfbf6083be58148f223704"
     },
     "src/scene/reflectionPass.js": {
       "bytes": 2483,
@@ -228,13 +244,17 @@
       "bytes": 1490,
       "sha256": "bf2b1d1d696cf59f315950a3fd0aba0d67f77507c6ec8cb3174943d2e07897f4"
     },
+    "src/ui/buildSummary.js": {
+      "bytes": 9190,
+      "sha256": "1e21fa6adef9bb6bde19a189b440adb6a80850b96c446744c9ead808bb0019f5"
+    },
     "src/ui/cabinetArt.js": {
       "bytes": 10494,
-      "sha256": "640389c3a713f600abdc1b07fd73be21d10d4b6b5965aef6af5f002336d0d665"
+      "sha256": "56097fd92b2169062ebea720ad1896bb6438591cd78f0c7fb3cb74115497eeec"
     },
     "src/ui/dom.js": {
-      "bytes": 302,
-      "sha256": "e1fef8c87a0413f98a512d6a6c361bf41f9212becb2b4cd27e9b5dd06d2a671f"
+      "bytes": 1079,
+      "sha256": "7c3afd6c9f4f04b6a9754b1440ee993d6fabe7e7291bb08302183a564170531c"
     },
     "src/ui/hud.js": {
       "bytes": 90,
@@ -246,11 +266,15 @@
     },
     "src/ui/scoreHud.js": {
       "bytes": 1481,
-      "sha256": "3b3d90a219303b441ec57affe3f6edbddd2a6f5adf23c070a5b9514385b3d970"
+      "sha256": "adb1c1f114bca64b3c57f246164aa3f9ef249e038e50ab3a29ee361d1366d09a"
     },
     "src/ui/shopArt.js": {
-      "bytes": 13613,
-      "sha256": "00b5d7c944ed0f098afb6d91c40a6f6abfc6cb2a99512efb2e0e4d5d20d0a71a"
+      "bytes": 13596,
+      "sha256": "dea464c8651a3778906458787798aaaeeba540775b0d49e9abb1cc065aaaaf29"
+    },
+    "src/ui/starterEquipment.js": {
+      "bytes": 7986,
+      "sha256": "04b2c13e30fc2cbe20cfe51bfbace99bd30e68579932ecd52f72d9100e3cb1c0"
     },
     "styles/arcade.css": {
       "bytes": 26697,
@@ -268,9 +292,13 @@
       "bytes": 89,
       "sha256": "25c15fb71ecc4fb4da4e95f4e17ba9ad426968a5b20950aac3d9b91ff48a73d3"
     },
+    "styles/equipment.css": {
+      "bytes": 15792,
+      "sha256": "a89cf1fa5fc0f49132c9579c1a8de9836708ac414370eb5f3716a843414dbb07"
+    },
     "styles/gameplay.css": {
-      "bytes": 2262,
-      "sha256": "c030e570e509e7f77bf3b2d13db1b366afaf0de7663dae9cfd4aeb433df0c4f1"
+      "bytes": 1864,
+      "sha256": "402c54cb05adb9f53f6c37b8770dafdd653f17a8e932082e31de8f5ee11f7792"
     },
     "styles/presentation.css": {
       "bytes": 10170,
@@ -279,6 +307,10 @@
     "styles/proshop.css": {
       "bytes": 28670,
       "sha256": "0575a644945ef93f541b2658e77a4b243f86e979c45b3a836e3ee5e2fb4bd790"
+    },
+    "styles/shop-build.css": {
+      "bytes": 14947,
+      "sha256": "95074e27b683efa94ce3ac65629691b811d15b6d33e3ba934b086896693f1fe8"
     },
     "styles/ui.css": {
       "bytes": 86,

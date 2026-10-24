@@ -1,5 +1,5 @@
-import { addBumperCharges } from '../game/laneHazards.js?v=0.3.0';
-import { GAME } from '../core/state.js?v=0.3.0';
+import { addBumperCharges } from '../game/laneHazards.js?v=0.4.0';
+import { GAME } from '../core/state.js?v=0.4.0';
 
 export const EVENT_TYPES = [
     {

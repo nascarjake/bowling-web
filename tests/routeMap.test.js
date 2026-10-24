@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { routeNodePosition, stageConnections, circuitWires, districtForStage, routeTheme } from '../src/ui/routeArt.js?v=0.3.0';
-import { ROUTE_TYPES, BOSS_VARIANTS } from '../src/content/routes.js?v=0.3.0';
+import { routeNodePosition, stageConnections, circuitWires, districtForStage, routeTheme } from '../src/ui/routeArt.js?v=0.4.0';
+import { ROUTE_TYPES, BOSS_VARIANTS } from '../src/content/routes.js?v=0.4.0';
 
 const rows = Array.from({ length: 12 }, (_, index) => {
     const frame = index + 1;

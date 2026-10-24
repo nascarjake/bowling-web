@@ -1,4 +1,4 @@
-import { isGutterMawRoute } from './laneHazards.js?v=0.3.0';
+import { isGutterMawRoute } from './laneHazards.js?v=0.4.0';
 // Gameplay balance lives here; legacy house upgrades remain shared by both balls.
 export const BALL_TRAITS = {
     drive: { name: 'Drive Core', desc: '+1.8 physical mass for stronger carry.', color: '#71d9ff', mass: 1.8 },
@@ -48,8 +48,8 @@ export function switchBall(game, index, stage, debug = false) {
     game.ballLoadout.selected = index;
     return true;
 }
-export function addBallTrait(game, traitId) {
-    const ball = selectedBall(game);
+export function addBallTrait(game, traitId, index = game.ballLoadout?.selected) {
+    const ball = game.mode === 'roguelike' ? game.ballLoadout?.balls[index] : null;
     if (!ball || !BALL_TRAITS[traitId] || ball.traits.includes(traitId)) return false;
     ball.traits.push(traitId);
     return true;

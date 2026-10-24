@@ -10,10 +10,6 @@
 #bumper-charge-label { display:block; margin-top:7px; color:#ffbd99; font:14px 'VT323',monospace; }
 .shop-ball-bag { margin-bottom:16px; }
 .shop-ball-bag p { flex-basis:100%; font-size:13px; color:#d1b8ed; }
-.starter-balls { border:1px solid #6c8698; padding:12px; margin:16px 0; }
-.starter-balls p, #starter-ball-choices small { font:16px 'VT323',monospace; color:#b7d4de; }
-#starter-ball-choices label { display:block; margin:8px 0; font-size:11px; }
-#starter-ball-choices select { display:block; width:100%; margin-top:5px; padding:7px; background:#17263b; color:#f4ddaa; font:18px 'VT323',monospace; }
 @media(max-width:640px) { #lane-modifier-label { max-width:210px; font-size:13px; padding:5px 8px; } #ball-bag-hud { max-width:220px; padding:4px; } #ball-bag-buttons button { min-width:85px; padding:4px; font-size:14px; } #ball-bag-buttons small { font-size:11px; } }
 @media(prefers-reduced-motion:reduce) { #ball-bag-buttons button { transition:none; } }
 

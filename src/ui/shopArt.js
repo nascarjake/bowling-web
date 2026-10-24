@@ -1,10 +1,10 @@
 // The pro shop displays the effect first. Complete mechanics stay in Inspect.
 const entry = (kind, color, value, label, summary, duration = 'THIS RUN') => ({ kind, color, value, label, summary, duration });
 const RUN_GEAR = {
-    ball_trait_drive: entry('core', '#71d9ff', '+1.8', 'SELECTED BALL MASS', 'More carry on your selected ball.'),
-    ball_trait_focus: entry('tape', '#ffbd69', '+.012', 'SELECTED BALL TIMING', 'A cleaner release on your selected ball.'),
-    ball_trait_pearl: entry('pearl', '#ef9bff', '+25%', 'SELECTED BALL HOOK', 'A later, stronger finish on your selected ball.'),
-    ball_trait_anchor: entry('urethane', '#78edbc', '−45%', 'GUTTER MAW PULL', 'Resist black holes on your selected ball.'),
+    ball_trait_drive: entry('core', '#71d9ff', '+1.8', 'ONE BALL / MASS', 'More carry on one chosen ball.'),
+    ball_trait_focus: entry('tape', '#ffbd69', '+.012', 'ONE BALL / TIMING', 'A cleaner release on one chosen ball.'),
+    ball_trait_pearl: entry('pearl', '#ef9bff', '+25%', 'ONE BALL / HOOK', 'A later, stronger finish on one chosen ball.'),
+    ball_trait_anchor: entry('urethane', '#78edbc', '−45%', 'ONE BALL / MAW PULL', 'Resist black holes on one chosen ball.'),
     gold_pins: entry('gold', '#f2d079', '+10%', 'GOLD PIN CHANCE', 'More gold in every rack.'),
     explosive_pins: entry('explosive', '#ff9478', '+7%', 'TNT PIN CHANCE', 'Give nearby pins a blast.'),
     implosive_pins: entry('implosive', '#c5a1ff', '+7%', 'GRAVITY PIN CHANCE', 'Pull clusters together.'),

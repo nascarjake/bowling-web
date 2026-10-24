@@ -1,6 +1,7 @@
-import { createSharedGeometryPool } from './sharedGeometry.js?v=0.3.0';
-import { createPinGeometry } from './pinGeometry.js?v=0.3.0';
-import { districtForStage, routeTheme } from '../ui/routeArt.js?v=0.3.0';
+import { ballTextureVein, BALL_TEXTURE_CHANNELS } from './ballSurface.js?v=0.4.0';
+import { createSharedGeometryPool } from './sharedGeometry.js?v=0.4.0';
+import { createPinGeometry } from './pinGeometry.js?v=0.4.0';
+import { districtForStage, routeTheme } from '../ui/routeArt.js?v=0.4.0';
 
 // Presentation for a single, continuously widening lane. Dimensions are in world
 // units: boards, trim, and light fixtures retain their scale as the rack grows.
@@ -421,10 +422,9 @@ export function createLanePresentation(scene, renderer) {
         const pixels = ctx.createImageData(w, h);
         for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
             const u = x / w * Math.PI * 2, v = y / h * Math.PI;
-            const t = Math.sin(u * 5 + Math.sin(v * 8 + Math.cos(u * 3)) * 2.5);
-            const vein = Math.pow((t + 1) / 2, 5);
+            const vein = ballTextureVein(u, v);
             const i = (y * w + x) * 4;
-            pixels.data[i] = 16 + vein * 44; pixels.data[i + 1] = 49 + vein * 145; pixels.data[i + 2] = 100 + vein * 104; pixels.data[i + 3] = 255;
+            pixels.data[i] = BALL_TEXTURE_CHANNELS[0][0] + vein * BALL_TEXTURE_CHANNELS[0][1]; pixels.data[i + 1] = BALL_TEXTURE_CHANNELS[1][0] + vein * BALL_TEXTURE_CHANNELS[1][1]; pixels.data[i + 2] = BALL_TEXTURE_CHANNELS[2][0] + vein * BALL_TEXTURE_CHANNELS[2][1]; pixels.data[i + 3] = 255;
         }
         ctx.putImageData(pixels, 0, 0);
     });

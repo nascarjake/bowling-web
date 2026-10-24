@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRapierCannonShim } from '../src/physics/rapierShim.js?v=0.3.0';
+import { createRapierCannonShim } from '../src/physics/rapierShim.js?v=0.4.0';
 
-import {fakeRapier} from './helpers/fakeRapier.js';
+import {fakeRapier} from './helpers/fakeRapier.js?v=0.4.0';
 
 test('compound pin mass is distributed exactly once, lower center is weighted, and pins start asleep', () => {
     const CANNON = createRapierCannonShim(fakeRapier);

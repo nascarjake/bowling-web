@@ -5,3 +5,17 @@ export function setIfChanged(target, property, value) {
     target[property] = value;
     return true;
 }
+
+// Let the browser advance normally between dialog controls; wrap only at edges.
+export function containDialogTab(event, root) {
+    if (event.key !== 'Tab') return;
+    const controls = [...root.querySelectorAll('button, [href], input, select, textarea, summary, [tabindex]')]
+        .filter(control => !control.disabled && control.tabIndex >= 0 && control.getClientRects().length);
+    const first = controls[0], last = controls.at(-1), current = root.ownerDocument.activeElement;
+    if (!first) return;
+    if (event.shiftKey && (current === first || !controls.includes(current))) {
+        event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && (current === last || !controls.includes(current))) {
+        event.preventDefault(); first.focus();
+    }
+}

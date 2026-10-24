@@ -144,7 +144,7 @@ export const BOSS_VARIANTS = {
             id: 'boss_bomb_rack',
             name: 'Bomb Rack',
             label: 'BOSS',
-            desc: 'Volatile pins appear more often, but their forces are damped. Control the chaos.',
+            desc: 'At least one explosive pin joins the volatile rack, but forces are damped. Control the chaos.',
             reward: 23,
             targetMod: 10,
             rollBonus: 1,
@@ -152,6 +152,7 @@ export const BOSS_VARIANTS = {
             hookMod: 1,
             pinScoreMod: 1.14,
             specialMod: 1.65,
+            featuredPin: 'EXPLOSIVE',
             boss: true
         }
     ],
@@ -203,7 +204,7 @@ export const BOSS_VARIANTS = {
             id: 'boss_gravity_final',
             name: 'Gravity Well',
             label: 'FINAL',
-            desc: 'Special pins cluster the deck. Clear deliberately before the rack folds in on itself.',
+            desc: 'At least one implosive pin joins the special rack. Clear deliberately before the rack folds in on itself.',
             reward: 0,
             targetMod: 18,
             rollBonus: 1,
@@ -211,6 +212,7 @@ export const BOSS_VARIANTS = {
             hookMod: 0.95,
             pinScoreMod: 1.24,
             specialMod: 1.9,
+            featuredPin: 'IMPLOSIVE',
             boss: true
         }
     ]

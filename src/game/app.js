@@ -1,32 +1,35 @@
-import { renderReflectionPass, shouldUpdateReflection, syncReflectionClone } from '../scene/reflectionPass.js?v=0.3.0';
-import { BALL_TRAITS, STARTER_BALLS, createBallLoadout, migrateBallLoadout, selectedBall, ballBonuses, canSwitchBall, switchBall, laneModifierLabel } from './ballLoadout.js?v=0.3.0';
-import { migrateBumperCharges, createBumperContacts, consumeBumperImpact, rearmBumperContacts, gutterMawDelta, isGutterMawRoute } from './laneHazards.js?v=0.3.0';
-import { createMawVisuals } from '../scene/gameplayVisuals.js?v=0.3.0';
-import { syncTextCells } from '../ui/scoreHud.js?v=0.3.0';
-import { setIfChanged } from '../ui/dom.js?v=0.3.0';
-import { updateParticles } from '../scene/particles.js?v=0.3.0';
-import { RetroAudio } from '../audio/retroAudio.js?v=0.3.0';
-import { GAME } from '../core/state.js?v=0.3.0';
-import { SHOP_UPGRADES } from '../content/shopUpgrades.js?v=0.3.0';
-import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js?v=0.3.0';
-import { EVENT_TYPES } from '../content/events.js?v=0.3.0';
-import { VOCABULARY } from '../content/vocabulary.js?v=0.3.0';
-import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js?v=0.3.0';
-import { PIN_TYPES } from '../content/pinTypes.js?v=0.3.0';
-import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js?v=0.3.0';
-import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js?v=0.3.0';
-import { initPhysics } from '../physics/rapierShim.js?v=0.3.0';
-import { createLaneDimensions, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from './laneLayout.js?v=0.3.0';
-import { createLanePresentation } from '../scene/presentation.js?v=0.3.0';
-import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=0.3.0';
+import { buildSummaryMarkup, equipmentScope, quoteBallTrait, ballTraitEligibility, receiverMarkup } from '../ui/buildSummary.js?v=0.4.0';
+import { mountStarterEquipment, bindEquipmentNavigation } from '../ui/starterEquipment.js?v=0.4.0';
+import { renderReflectionPass, shouldUpdateReflection, syncReflectionClone } from '../scene/reflectionPass.js?v=0.4.0';
+import { BALL_TRAITS, STARTER_BALLS, createBallLoadout, migrateBallLoadout, selectedBall, ballBonuses, canSwitchBall, switchBall, laneModifierLabel } from './ballLoadout.js?v=0.4.0';
+import { migrateBumperCharges, createBumperContacts, consumeBumperImpact, rearmBumperContacts, gutterMawDelta, isGutterMawRoute } from './laneHazards.js?v=0.4.0';
+import { createMawVisuals } from '../scene/gameplayVisuals.js?v=0.4.0';
+import { syncTextCells } from '../ui/scoreHud.js?v=0.4.0';
+import { setIfChanged, containDialogTab } from '../ui/dom.js?v=0.4.0';
+import { updateParticles } from '../scene/particles.js?v=0.4.0';
+import { RetroAudio } from '../audio/retroAudio.js?v=0.4.0';
+import { GAME } from '../core/state.js?v=0.4.0';
+import { SHOP_UPGRADES } from '../content/shopUpgrades.js?v=0.4.0';
+import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js?v=0.4.0';
+import { EVENT_TYPES } from '../content/events.js?v=0.4.0';
+import { VOCABULARY } from '../content/vocabulary.js?v=0.4.0';
+import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js?v=0.4.0';
+import { PIN_TYPES } from '../content/pinTypes.js?v=0.4.0';
+import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js?v=0.4.0';
+import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js?v=0.4.0';
+import { initPhysics } from '../physics/rapierShim.js?v=0.4.0';
+import { createLaneDimensions, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from './laneLayout.js?v=0.4.0';
+import { createLanePresentation } from '../scene/presentation.js?v=0.4.0';
+import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=0.4.0';
 
-import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=0.3.0';
-import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=0.3.0';
+import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=0.4.0';
+import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=0.4.0';
 let eventRewardTimer = null;
 let debugEventIndex = 0;
 
 let shopCatalogFilter = 'all';
 let shopInspectorReturnFocus = null;
+let pendingBallPurchase = null;
 let shopFeedbackTimer = null;
 
 let displayedRouteStage = 1;
@@ -178,6 +181,7 @@ let mawVisuals = null;
 let throwElapsed = 0;
 let ballHudSignature = '';
 let starterBallIds = ['azure', 'amber'];
+let starterEquipment = null;
 let fpsCounter = null;
 let legendActiveTab = 'upgrades';
 let howToStepIndex = 0;
@@ -481,6 +485,9 @@ function setupPhysicsMaterials() {
     MATERIALS.guard = new CANNON.Material({ name: 'guard' });
     MATERIALS.gutter = new CANNON.Material({ name: 'gutter' });
 
+    // Historical requested pair coefficients: inactive in the Rapier shim.
+    // Shipping response uses rapierShim.js materialPresets/native Average.
+    // Do not tune this table expecting an effect or duplicate colliders to wire it.
     world.addContactMaterial(new CANNON.ContactMaterial(MATERIALS.ball, MATERIALS.lane, {
         friction: 0.018,
         restitution: 0.02
@@ -1080,6 +1087,7 @@ function updateDebugPanel() {
 }
 
 function applyDebugPlacement() {
+    physicalPins.forEach(pin => { pin.sleepingUpright = false; });
     if (modelState.alley) {
         applyAlleySplitSettings();
         applyAlleyNodeVisibility();
@@ -3569,6 +3577,7 @@ function spawnPin(x, z, type) {
         sleepTimeLimit: 0.32,
         sleepSpeedLimit: 0.045
     });
+    body.isBowlingPin = true;
     body.addShape(baseShape, new CANNON.Vec3(0, -0.76 * scale, 0));
     body.addShape(lowerShape, new CANNON.Vec3(0, -0.52 * scale, 0));
     body.addShape(bellyShape, new CANNON.Vec3(0, -0.22 * scale, 0));
@@ -3634,11 +3643,18 @@ function generatePinGrid(frameNumber) {
     const origin = laneOrigin();
     const offset = pinRackOffset();
     if (isTenPinMode()) primeTenPinRackSpecials();
+    const featuredType = !isTenPinMode() && PIN_TYPES[GAME.currentRoute?.featuredPin];
+    let featuredSeen = false;
     rack.points.forEach((point, index) => {
+        // Keep the regular roll/RNG consumption. Only fill the last slot when
+        // this boss's advertised mechanic would otherwise be absent entirely.
+        const x = origin.x + offset.x + point.x + (Math.random() * 2 - 1) * rack.jitter;
+        const z = laneEndZ() + 3.5 + offset.z + point.z + (Math.random() * 2 - 1) * rack.jitter;
+        const rolledType = rollPinType();
+        const type = featuredType && !featuredSeen && index === rack.points.length - 1 ? featuredType : rolledType;
+        featuredSeen ||= type === featuredType;
         const pin = spawnPin(
-            origin.x + offset.x + point.x + (Math.random() * 2 - 1) * rack.jitter,
-            laneEndZ() + 3.5 + offset.z + point.z + (Math.random() * 2 - 1) * rack.jitter,
-            rollPinType()
+            x, z, type
         );
         pin.rackIndex = index;
     });
@@ -3712,7 +3728,7 @@ function rollPinType() {
     }
     const rand = Math.random();
     const route = GAME.currentRoute || ROUTE_TYPES.STANDARD;
-    const specialMod = route.layout === 'start' ? 0.12 : route.boss ? 0.82 : route.layout === 'messy' ? 0.95 : route.specialMod || 1;
+    const specialMod = route.specialMod ?? (route.layout === 'start' ? 0.12 : route.boss ? 0.82 : route.layout === 'messy' ? 0.95 : 1);
 
     let gold = Math.min(0.28, GAME.activeUpgrades.goldPinChance * specialMod);
     let explosive = Math.min(0.2, GAME.activeUpgrades.explosivePinChance * specialMod);
@@ -4576,6 +4592,7 @@ function updateGameplayHud() {
 
 function bindInputs() {
     renderStarterChoices();
+    bindEquipmentNavigation(document.getElementById('roguelike-run-screen'));
     document.getElementById('ball-bag-buttons').addEventListener('keydown', event => {
         if (event.code === 'Space' || event.code === 'Enter') event.stopPropagation();
     });
@@ -4598,7 +4615,7 @@ function bindInputs() {
         if (event.target.id === 'shop-inspect-screen') closeShopInspector();
     });
     document.getElementById('shop-inspect-screen').addEventListener('keydown', event => {
-        if (event.code === 'Tab') { event.preventDefault(); document.getElementById('btn-close-shop-inspect').focus(); }
+        containDialogTab(event, event.currentTarget);
     });
     if (window.ResizeObserver) {
         routeMapResizeObserver = new ResizeObserver(() => {
@@ -4821,6 +4838,7 @@ function bindInputs() {
         sfx.playStrike();
         updateMainMenuMeta();
         document.getElementById('roguelike-run-screen').classList.remove('hidden');
+        document.querySelector('[data-equipment-slot="0"]')?.focus({ preventScroll: true });
     });
     document.getElementById('btn-start-run-hub').addEventListener('click', () => {
         sfx.playStrike();
@@ -4844,7 +4862,10 @@ function bindInputs() {
     document.getElementById('btn-review-dailies')?.addEventListener('click', () => {
         openDailyReviewDebug();
     });
-    document.getElementById('btn-close-roguelike-run').addEventListener('click', () => document.getElementById('roguelike-run-screen').classList.add('hidden'));
+    document.getElementById('btn-close-roguelike-run').addEventListener('click', () => {
+        document.getElementById('roguelike-run-screen').classList.add('hidden');
+        document.getElementById('btn-start-game').focus({ preventScroll: true });
+    });
     document.getElementById('btn-how-to-play-hub').addEventListener('click', () => {
         showRoguelikeHubDetail('howto');
     });
@@ -5846,6 +5867,8 @@ function showRoguelikeHubDetail(view) {
             howToStepIndex = index;
             detail.innerHTML = howToStepMarkup(howToStepIndex);
             bindHowToControls(detail, renderHubHowTo);
+            installEquipmentDetailClose(detail, view);
+            detail.focus({ preventScroll: true });
         };
         renderHubHowTo(howToStepIndex);
     } else {
@@ -5858,7 +5881,9 @@ function showRoguelikeHubDetail(view) {
         `;
         bindRelicCardClicks(detail);
     }
+    installEquipmentDetailClose(detail, view);
     detail.classList.remove('hidden');
+    detail.focus({ preventScroll: true });
 }
 
 function renderRunSlots() {
@@ -6273,7 +6298,7 @@ function attachPinImpactSound(pin) {
     pin.body.addEventListener('collide', (event) => {
         if (!pin.body || pin.cleanupStarted) return;
         const other = event.body;
-        if (other !== ballBody && !physicalPins.some(p => p.body === other)) return;
+        if (other !== ballBody && !other?.isBowlingPin) return;
 
         if (other === ballBody) applyBowlingHeadPinEntryPhysics(pin);
 
@@ -6410,6 +6435,7 @@ const pinQueryPosition = new THREE.Vector3();
 function isPinKnocked(pin) {
     if (pin.knocked) return true;
     if (!pin.body) return false;
+    if (pin.sleepingUpright && pin.body.raw?.isSleeping?.()) return false;
     pinQueryUp.set(0, 1, 0).applyQuaternion(pin.mesh.quaternion);
     if (pinQueryUp.y < 0.66) return true;
     // Z depends on widening-lane dimensions; X/Y are the configured origin.
@@ -7193,20 +7219,24 @@ function renderProShopCards(items, classic = false) {
     container.innerHTML = items.map((item, index) => {
         const visual = shopVisual(item);
         const cost = classic ? item.cost : upgradeCost(item);
-        const soldOut = !classic && (item.traitId ? selectedBall(GAME)?.traits.includes(item.traitId) : !item.repeatable && (GAME.shopSoldOut || []).includes(item.id));
+        const soldOut = !classic && (item.traitId ? GAME.ballLoadout.balls.every(ball => ball.traits.includes(item.traitId)) : !item.repeatable && (GAME.shopSoldOut || []).includes(item.id));
         const count = classic && item.typeKey ? GAME.tenPin.selectedRackSpecials.filter(type => type === item.typeKey).length : 0;
         const temporary = visual.duration !== 'THIS RUN';
         const offer = shopOfferState({ cash: GAME.cash, cost, soldOut, temporary, rackFull: classic && item.typeKey && GAME.tenPin.selectedRackSpecials.length >= 3, ready: classic && item.id === 'manual_rack' && GAME.tenPin.manualRackNext });
-        const actionLabel = `${offer.label} ${item.name}${offer.canBuy ? ` for ${cost} Pin Dollars` : ''}`;
+        const scope = classic ? null : equipmentScope(item);
+        // Ball traits open the receiver selector even when the active ball owns
+        // one; the reserve ball may still be eligible.
+        const canOpenReceiver = !classic && item.traitId && !GAME.ballLoadout.balls.every(ball => ball.traits.includes(item.traitId));
+        const actionLabel = canOpenReceiver ? `Choose receiving ball for ${item.name}` : `${offer.label} ${item.name}${offer.canBuy ? ` for ${cost} Pin Dollars` : ''}`;
         return `<article class="gear-card ${offer.state}" data-gear-id="${item.id}" style="--gear-color:${visual.color};--gear-order:${index}">
-            <div class="gear-card-top"><span>${visual.duration}</span><button type="button" class="gear-inspect-button" data-inspect-gear="${item.id}" aria-label="Inspect ${escapeHtml(item.name)}">i</button></div>
+            <div class="gear-card-top"><span>${scope?.label || visual.duration}</span><button type="button" class="gear-inspect-button" data-inspect-gear="${item.id}" aria-label="Inspect ${escapeHtml(item.name)}">i</button></div>
             <div class="gear-display">${shopArtwork(item)}${count ? `<span class="gear-packed-count">×${count} PACKED</span>` : ''}${soldOut ? `<span class="gear-owned-stamp">✓ ${temporary ? 'PACKED' : 'INSTALLED'}</span>` : ''}</div>
-            <div class="gear-copy"><span class="gear-category">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.name)}</h3><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${visual.summary}${item.traitId ? ` On ${escapeHtml(STARTER_BALLS.find(ball => ball.id === selectedBall(GAME)?.id)?.name || 'selected ball')}.` : ''}</p></div>
-            <button type="button" class="gear-buy" data-buy-gear="${item.id}" aria-label="${escapeHtml(actionLabel)}" ${offer.canBuy ? '' : 'disabled'}><span>${offer.label}</span><b>${offer.state === 'owned' ? '✓' : `$${cost}`}</b></button>
+            <div class="gear-copy"><span class="gear-category">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.name)}</h3><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${visual.summary}</p>${scope ? `<small class="gear-scope-limit">${scope.limit}</small>` : ''}</div>
+            <button type="button" class="gear-buy" data-buy-gear="${item.id}" aria-label="${escapeHtml(actionLabel)}" ${offer.canBuy || canOpenReceiver ? '' : 'disabled'}><span>${canOpenReceiver ? 'CHOOSE BALL' : offer.label}</span><b>${offer.state === 'owned' && !canOpenReceiver ? '✓' : `$${cost}`}</b></button>
         </article>`;
     }).join('');
     container.scrollTop = scrollTop;
-    container.querySelectorAll('[data-buy-gear]').forEach(button => button.addEventListener('click', () => classic ? window.purchaseTenPinItem(button.dataset.buyGear) : window.purchaseUpgrade(button.dataset.buyGear)));
+    container.querySelectorAll('[data-buy-gear]').forEach(button => button.addEventListener('click', () => classic ? window.purchaseTenPinItem(button.dataset.buyGear) : SHOP_UPGRADES.find(item => item.id === button.dataset.buyGear)?.traitId ? openShopInspector(button.dataset.buyGear, false) : window.purchaseUpgrade(button.dataset.buyGear)));
     container.querySelectorAll('[data-inspect-gear]').forEach(button => button.addEventListener('click', () => openShopInspector(button.dataset.inspectGear, classic)));
 }
 
@@ -7220,13 +7250,8 @@ function renderProShopLoadout() {
             return `<div class="rack-bag-slot ${key ? 'is-packed' : ''}">${key ? shopPinArt(key.toLowerCase()) : '<span class="empty-bag-slot">+</span>'}<span>${key ? escapeHtml(pinTypeLabel(key)) : 'EMPTY'}</span></div>`;
         }).join('')}</div><div class="loadout-note">${GAME.tenPin.manualRackNext ? 'MANUAL SETUP READY' : 'AUTO RACK'}<span>${nextThrowReady ? 'BALL TECH PACKED' : 'PICK YOUR EDGE'}</span></div>`;
     } else {
-        const u = GAME.activeUpgrades;
-        container.innerHTML = `<div class="loadout-label"><span>YOUR HOUSE BUILD</span><b>${GAME.upgradePurchases || 0} ${GAME.upgradePurchases === 1 ? 'UPGRADE' : 'UPGRADES'}</b></div><div class="build-readouts">${[['CORE', `${uiNumber(u.ballMass)} LB`], ['SIZE', `${Math.round(u.ballSize * 100)}%`], ['PIN VALUE', `×${u.pinValueMultiplier.toFixed(2)}`], ['STEERING', u.spinPower > 0 ? 'ONLINE' : 'OFFLINE'], ['EXTRA ROLLS', `+${u.extraRolls}`], ['BUMPER IMPACTS', `${migrateBumperCharges(u)} SHARED`]].map(([label, value]) => `<div><span>${label}</span><b>${value}</b></div>`).join('')}</div>`;
-        const bag = document.createElement('div');
-        bag.className = 'shop-ball-bag';
-        bag.innerHTML = '<p>House gear is shared. Apply permanent ball traits to:</p>' + ballButtonsMarkup();
-        container.prepend(bag);
-        bag.querySelectorAll('[data-ball-index]').forEach(button => button.addEventListener('click', () => selectLoadoutBall(Number(button.dataset.ballIndex))));
+        container.innerHTML = buildSummaryMarkup(GAME);
+        container.querySelectorAll('[data-ball-index]').forEach(button => button.addEventListener('click', () => selectLoadoutBall(Number(button.dataset.ballIndex))));
     }
 }
 
@@ -7234,28 +7259,31 @@ function openShopInspector(itemId, classic) {
     if (GAME.state !== 'SHOP') return;
     const item = (classic ? TENPIN_SHOP_ITEMS : SHOP_UPGRADES).find(candidate => candidate.id === itemId);
     if (!item) return;
+    pendingBallPurchase = null;
     const visual = shopVisual(item);
     const screen = document.getElementById('shop-inspect-screen');
     shopInspectorReturnFocus = document.activeElement;
     screen.style.setProperty('--gear-color', visual.color);
     document.getElementById('gear-inspect-content').innerHTML = `<div class="gear-inspect-art">${shopArtwork(item)}<span>${visual.duration}</span></div><div class="gear-inspect-copy"><span class="arcade-eyebrow">${escapeHtml(item.category)}</span><h2 id="gear-inspect-name">${escapeHtml(item.name)}</h2><div class="gear-benefit"><b>${visual.value}</b><span>${visual.label}</span></div><p>${renderVocabularyText(item.desc)}</p><div class="gear-spec-price"><span>HOUSE PRICE</span><b>$${classic ? item.cost : upgradeCost(item)}</b></div></div>`;
+    if (!classic && item.traitId) renderTraitReceiver(item);
     screen.classList.remove('hidden');
     document.getElementById('btn-close-shop-inspect').focus({ preventScroll: true });
     sfx.playTick();
 }
 
 function closeShopInspector(restoreFocus = true) {
+    pendingBallPurchase = null;
     document.getElementById('shop-inspect-screen')?.classList.add('hidden');
     if (restoreFocus && shopInspectorReturnFocus?.isConnected) shopInspectorReturnFocus.focus({ preventScroll: true });
     shopInspectorReturnFocus = null;
 }
 
-function showShopPurchase(item) {
+function showShopPurchase(item, receiverName = null) {
     const feedback = document.getElementById('shop-purchase-feedback');
     const visual = shopVisual(item);
     clearTimeout(shopFeedbackTimer);
     feedback.style.setProperty('--gear-color', visual.color);
-    feedback.innerHTML = `${shopArtwork(item)}<div><span>${visual.duration === 'THIS RUN' ? 'UPGRADE INSTALLED' : 'READY TO ROLL'}</span><b>${escapeHtml(item.name)}</b></div><strong>✓</strong>`;
+    feedback.innerHTML = `${shopArtwork(item)}<div><span>${visual.duration === 'THIS RUN' ? 'UPGRADE INSTALLED' : 'READY TO ROLL'}</span><b>${escapeHtml(item.name)}${receiverName ? ` → ${escapeHtml(receiverName)}` : ''}</b></div><strong>✓</strong>`;
     feedback.hidden = false;
     shopFeedbackTimer = setTimeout(() => { feedback.hidden = true; }, 2200);
 }
@@ -8042,26 +8070,28 @@ function resolveEventChoice(event, choice) {
     eventRewardTimer = setTimeout(() => { receipt.hidden = true; }, 3400);
 }
 
-window.purchaseUpgrade = function(itemId) {
+window.purchaseUpgrade = function(itemId, receiverQuote = null) {
     if (GAME.state !== 'SHOP' || isTenPinMode()) return;
     const upgrade = SHOP_UPGRADES.find(u => u.id === itemId);
     if (!upgrade || !(GAME.shopSelection || []).includes(itemId)) return;
-    if (upgrade.traitId && (!selectedBall(GAME) || selectedBall(GAME).traits.includes(upgrade.traitId))) return;
     if (!upgrade.repeatable && !upgrade.traitId && (GAME.shopSoldOut || []).includes(itemId)) return;
     const cost = upgradeCost(upgrade);
+    if (upgrade.traitId && (receiverQuote !== pendingBallPurchase || !ballTraitEligibility(GAME, upgrade, cost, receiverQuote).canBuy)) return;
     if (GAME.cash < cost) return;
 
     GAME.cash -= cost;
     GAME.upgradePurchases++;
     sfx.playCoin();
-    upgrade.effect();
+    upgrade.effect(upgrade.traitId ? receiverQuote.index : undefined);
+    pendingBallPurchase = null;
     if (!GAME.shopSoldOut) GAME.shopSoldOut = [];
     if (!upgrade.repeatable && !upgrade.traitId && !GAME.shopSoldOut.includes(itemId)) GAME.shopSoldOut.push(itemId);
-    showAlert(`UPGRADED: ${upgrade.name}!`);
+    const receiverName = upgrade.traitId ? STARTER_BALLS.find(ball => ball.id === GAME.ballLoadout.balls[receiverQuote.index].id)?.name : null;
+    showAlert(`${upgrade.name}${receiverName ? ` → ${receiverName}` : ' upgraded'}!`);
     autoSaveRunSlot();
 
     triggerShopTransition();
-    showShopPurchase(upgrade);
+    showShopPurchase(upgrade, receiverName);
     updateUI();
 };
 
@@ -8427,6 +8457,11 @@ function updateVisuals(dt) {
 
     for (let i = physicalPins.length - 1; i >= 0; i--) {
         const pin = physicalPins[i];
+        // A pose validated upright on the previous step stays unchanged while
+        // Rapier sleeps. Recheck immediately on wake; cleanup always advances.
+        const sleeping = pin.body?.raw?.isSleeping?.() || false;
+        if (pin.sleepingUpright && sleeping && !pin.cleanupStarted) continue;
+        pin.sleepingUpright = false;
         const belowKillPlane = pin.body && pin.body.position.y < cleanupKillY();
 
         if (belowKillPlane) {
@@ -8488,7 +8523,7 @@ function updateVisuals(dt) {
         pin.body.quaternion.copyTo(pin.mesh.quaternion);
         updateReflectionClone(pin.mesh, pin.reflection);
 
-        const speed = pin.body.velocity.length();
+        const speed = pin.impactSounded ? 0 : pin.body.velocity.length();
         if (speed > 3.8 && !pin.impactSounded) {
             pin.impactSounded = true;
             if (!impactCamera.active && (GAME.state === 'BALL_ROLLING' || GAME.state === 'ROLL_SETTLING')) {
@@ -8511,6 +8546,8 @@ function updateVisuals(dt) {
 
         if (isPinKnocked(pin)) {
             startPinCleanup(pin);
+        } else {
+            pin.sleepingUpright = sleeping;
         }
     }
 
@@ -8744,14 +8781,11 @@ export async function bootGame() {
 
 
 function renderStarterChoices() {
-    const container = document.getElementById('starter-ball-choices');
-    container.innerHTML = starterBallIds.map((id, index) => `<label>Ball ${index + 1}<select data-starter-index="${index}" aria-label="Starter ball ${index + 1}">${STARTER_BALLS.map(ball => `<option value="${ball.id}" ${ball.id === id ? 'selected' : ''}>${ball.name} — ${BALL_TRAITS[ball.trait].name}</option>`).join('')}</select></label>`).join('') + '<small>Choose two different balls. Daily runs use Azure + Amber for everyone.</small>';
-    container.querySelectorAll('select').forEach(select => select.addEventListener('change', () => {
-        const index = Number(select.dataset.starterIndex), other = 1 - index, previous = starterBallIds[index];
-        starterBallIds[index] = select.value;
-        if (starterBallIds[other] === select.value) starterBallIds[other] = previous;
-        renderStarterChoices();
-    }));
+    starterEquipment?.destroy();
+    starterEquipment = mountStarterEquipment(document.getElementById('starter-ball-choices'), {
+        ids: starterBallIds,
+        onChange(ids) { starterBallIds = ids; sfx.playTick(); }
+    });
 }
 
 function ballButtonsMarkup() {
@@ -8848,4 +8882,35 @@ function syncMawVisuals() {
     if (!isGutterMawRoute(GAME.currentRoute)) return;
     const metrics = gutterChannelMetrics(LANE.currentWidth);
     mawVisuals = createMawVisuals(THREE, scene, { origin: laneOrigin(), length: laneLength(), gutterX: metrics.visualWidth / 2 + metrics.gutterWidth * 0.5 });
+}
+
+function renderTraitReceiver(item) {
+    const content = document.getElementById('gear-inspect-content');
+    let receiver = content.querySelector('.trait-receiver-host');
+    if (!receiver) { receiver = document.createElement('div'); receiver.className = 'trait-receiver-host'; content.appendChild(receiver); }
+    const cost = upgradeCost(item);
+    receiver.innerHTML = receiverMarkup(GAME, item, cost, pendingBallPurchase);
+    receiver.querySelectorAll('[data-receive-ball]').forEach(button => button.addEventListener('click', () => {
+        pendingBallPurchase = quoteBallTrait(GAME, item, upgradeCost(item), Number(button.dataset.receiveBall));
+        renderTraitReceiver(item);
+        content.querySelector(`[data-receive-ball="${button.dataset.receiveBall}"]`)?.focus({ preventScroll: true });
+    }));
+    receiver.querySelector('#btn-confirm-ball-trait').addEventListener('click', () => {
+        const quote = pendingBallPurchase;
+        if (!ballTraitEligibility(GAME, item, upgradeCost(item), quote).canBuy) {
+            pendingBallPurchase = null;
+            renderTraitReceiver(item);
+            return;
+        }
+        window.purchaseUpgrade(item.id, quote);
+    });
+}
+
+function installEquipmentDetailClose(detail, view) {
+    detail.querySelector('.equipment-detail-close')?.remove();
+    detail.insertAdjacentHTML('afterbegin', '<button type="button" class="equipment-detail-close">BACK TO YOUR BAG ×</button>');
+    detail.querySelector('.equipment-detail-close').addEventListener('click', () => {
+        detail.classList.add('hidden');
+        document.getElementById(view === 'stats' ? 'btn-stats-screen-hub' : view === 'howto' ? 'btn-how-to-play-hub' : 'btn-relic-shelf-hub').focus({ preventScroll: true });
+    });
 }

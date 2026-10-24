@@ -94,6 +94,9 @@ export function createRapierCannonShim(RAPIER) {
     class Material {
         constructor(options = {}) { this.name = options.name || 'material'; }
     }
+    // Legacy Cannon declarations are retained for the diagnostic comparison.
+    // Rapier JS cannot apply this arbitrary pair table with its public hooks;
+    // effective contacts use the native average of materialPresets below.
     class ContactMaterial { constructor() {} }
     class Sphere { constructor(radius) { this.type = 'sphere'; this.radius = radius; } }
     class Box {
@@ -168,17 +171,18 @@ export function createRapierCannonShim(RAPIER) {
         throw new Error(`Unsupported Rapier shim shape: ${shape.type}`);
     }
 
+    const materialPresets = {
+        lane: { friction: 0.22, restitution: 0.02 },
+        pin: { friction: 0.3, restitution: 0.25 },
+        bouncyPin: { friction: 0.14, restitution: 0.65 },
+        ball: { friction: 0.04, restitution: 0.28 },
+        guard: { friction: 0.02, restitution: 0.35 },
+        gutter: { friction: 0.18, restitution: 0.03 }
+    };
+
     function applyMaterial(desc, material) {
         const name = material?.name || '';
-        const presets = {
-            lane: { friction: 0.22, restitution: 0.02 },
-            pin: { friction: 0.3, restitution: 0.25 },
-            bouncyPin: { friction: 0.14, restitution: 0.65 },
-            ball: { friction: 0.04, restitution: 0.28 },
-            guard: { friction: 0.02, restitution: 0.35 },
-            gutter: { friction: 0.18, restitution: 0.03 }
-        };
-        const preset = presets[name] || { friction: 0.2, restitution: 0.1 };
+        const preset = materialPresets[name] || { friction: 0.2, restitution: 0.1 };
         return desc.setFriction(preset.friction).setRestitution(preset.restitution);
     }
 
@@ -273,11 +277,13 @@ export function createRapierCannonShim(RAPIER) {
     return { World, Body, Material, ContactMaterial, Vec3, Quaternion, Sphere, Box, Cylinder, NaiveBroadphase: class {} };
 }
 
+// Exact runtime already used by the browser and checksum-locked diagnostic
+// bench. Keep releases reproducible instead of following a mutable CDN alias.
 let physicsReady = null;
 
 export async function initPhysics() {
     if (!physicsReady) {
-        physicsReady = import('https://cdn.skypack.dev/@dimforge/rapier3d-compat').then(async ({ default: RAPIER }) => {
+        physicsReady = import('https://cdn.skypack.dev/-/@dimforge/rapier3d-compat@v0.19.3-Hmo5REaX4aU99UROofMk/dist=es2019,mode=imports/optimized/@dimforge/rapier3d-compat.js').then(async ({ default: RAPIER }) => {
             await RAPIER.init();
             return { RAPIER, CANNON: createRapierCannonShim(RAPIER) };
         });

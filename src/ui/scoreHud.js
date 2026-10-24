@@ -1,4 +1,4 @@
-import { setIfChanged } from './dom.js?v=0.3.0';
+import { setIfChanged } from './dom.js?v=0.4.0';
 
 // Controlled, text-only score HUD children. Compare real nodes/properties so
 // mode changes, replacement nodes and outside text edits cannot stale a cache.

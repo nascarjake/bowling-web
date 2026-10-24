@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pinfall</title>
-    <meta name="application-version" content="0.3.0">
+    <meta name="application-version" content="0.4.0">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts for Retro Style -->
@@ -15,14 +15,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
-    <link rel="stylesheet" href="./styles/base.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/ui.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/debug.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/presentation.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/arcade.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/proshop.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/cabinet.css?v=0.3.0">
-    <link rel="stylesheet" href="./styles/gameplay.css?v=0.3.0">
+    <link rel="stylesheet" href="./styles/base.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/ui.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/debug.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/presentation.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/arcade.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/proshop.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/cabinet.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/gameplay.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/equipment.css?v=0.4.0">
+    <link rel="stylesheet" href="./styles/shop-build.css?v=0.4.0">
 </head>
 <body class="relative w-screen h-screen flex items-center justify-center text-white">
 
@@ -325,44 +327,35 @@
             <footer class="menu-control-strip">
                 <div>Made by <a href="https://jakedoesdev.com" target="_blank">jakedoesdev.com</a> | </div>
                 <div>Sound effects courtesy of <a href="https://zapsplat.com" target="_blank">zapsplat.com</a></div>
-                <b>v0.2.0</b>
+                <b>v0.4.0</b>
             </footer>
         </div>
     </div>
 
-    <div id="roguelike-run-screen" class="meta-screen absolute inset-0 z-[60] hidden overflow-y-auto p-5">
-        <div class="meta-panel max-w-6xl mx-auto">
-            <div class="meta-header">
-                <div><h2>ROGUELIKE RUN</h2><p>Pick a keepsake. Choose a slot. Take on the house.</p></div>
-                <button id="btn-close-roguelike-run" class="pixel-btn px-5 py-3 bg-emerald-700 border-emerald-400 text-[10px] font-bold uppercase">Back</button>
+    <div id="roguelike-run-screen" class="meta-screen absolute inset-0 z-[60] hidden" role="dialog" aria-modal="true" aria-labelledby="equipment-title">
+        <div class="equipment-shell">
+            <header class="equipment-header">
+                <div><span class="equipment-eyebrow">PINFALL / THE HOUSE CIRCUIT</span><h2 id="equipment-title">BUILD YOUR BAG<span>.</span></h2></div>
+                <button id="btn-close-roguelike-run" type="button" class="equipment-back">BACK <span aria-hidden="true">↗</span></button>
+            </header>
+            <div class="equipment-body">
+                <section id="starter-ball-choices" class="equipment-stage" aria-label="Starter bowling balls"></section>
+                <aside class="equipment-support" aria-label="Run setup and saved runs">
+                    <section class="equipment-relic">
+                        <div class="support-heading"><h3>YOUR KEEPSAKE</h3><button id="btn-relic-shelf-hub" type="button">CHANGE</button></div>
+                        <div class="relic-equipped"><div id="selected-relic-art" aria-hidden="true"></div><div><strong id="selected-relic-label">Last Frame Token</strong><p id="selected-relic-desc">One emergency extra roll.</p></div></div>
+                    </section>
+                    <details class="equipment-continue"><summary>CONTINUE A RUN <span aria-hidden="true">↗</span></summary><div class="continue-drawer"><button type="button" data-close-continue>BACK TO BAG ×</button><h3>YOUR SAVED RUNS</h3><div id="run-slots-hub" class="run-slots" aria-label="Continue saved roguelike runs"></div></div></details>
+                    <nav class="equipment-help" aria-label="Run information"><button id="btn-how-to-play-hub" type="button">HOW TO PLAY</button><button id="btn-stats-screen-hub" type="button">RECORDS</button></nav>
+                    <p class="equipment-daily-note">DAILY RUN<span>Same Azure + Amber bag for everyone.</span></p>
+                </aside>
             </div>
-            <div class="roguelike-hub-grid">
-                <section class="roguelike-hub-primary">
-                    <span>Selected Relic</span>
-                    <div id="selected-relic-art" class="selected-relic-art" aria-hidden="true"></div><strong id="selected-relic-label">Last Frame Token</strong>
-                    <p id="selected-relic-desc">Once per run, if you fail a target, you get one emergency extra roll.</p>
-                    <fieldset class="starter-balls"><legend>Choose your two-ball bag</legend><p>Azure drives harder. Amber widens timing. Jade resists black holes.</p><div id="starter-ball-choices"></div></fieldset>
-                    <label class="seed-entry">
-                        <span>Run Seed</span>
-                        <input id="run-seed-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Type anything, or leave blank">
-                        <small>Optional. Any text becomes a shareable seed.</small>
-                    </label>
-                    <div class="roguelike-start-actions">
-                        <button id="btn-start-run-hub" class="pixel-btn w-full py-4 bg-emerald-600 border-emerald-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-bowling-ball"></i> Start New Run</button>
-                        <button id="btn-start-daily-run-hub" class="pixel-btn w-full py-4 bg-purple-800 border-purple-400 text-[12px] font-bold uppercase"><i class="fa-solid fa-calendar-day"></i> Start Daily Run</button>
-                    </div>
-                </section>
-                <section>
-                    <h3>Continue Runs</h3>
-                    <div id="run-slots-hub" class="run-slots" aria-label="Continue saved roguelike runs"></div>
-                </section>
-                <nav class="roguelike-hub-actions">
-                    <button id="btn-how-to-play-hub" class="pixel-btn px-5 py-3 bg-purple-800 border-purple-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-circle-question"></i> How To Play</button>
-                    <button id="btn-relic-shelf-hub" class="pixel-btn px-5 py-3 bg-[#5b3a24] border-[#f2c36b] text-[10px] font-bold uppercase"><i class="fa-solid fa-gem"></i> Relic Shelf</button>
-                    <button id="btn-stats-screen-hub" class="pixel-btn px-5 py-3 bg-cyan-800 border-cyan-400 text-[10px] font-bold uppercase"><i class="fa-solid fa-chart-column"></i> Stats</button>
-                </nav>
-                <section id="roguelike-hub-detail" class="roguelike-hub-detail hidden" aria-live="polite"></section>
-            </div>
+            <footer class="equipment-footer">
+                <details class="equipment-seed"><summary>RUN SEED <span aria-hidden="true">+</span></summary><label class="seed-drawer" for="run-seed-input"><span>OPTIONAL RUN SEED</span><input id="run-seed-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Leave blank for a fresh circuit"><small>The same seed creates the same route.</small></label></details>
+                <button id="btn-start-daily-run-hub" type="button" class="equipment-daily">DAILY RUN<span>FIXED BAG</span></button>
+                <button id="btn-start-run-hub" type="button" class="equipment-start"><span>START RUN<small>YOUR BAG. YOUR LINE.</small></span><b aria-hidden="true">→</b></button>
+            </footer>
+            <section id="roguelike-hub-detail" class="equipment-detail hidden" aria-label="Run information" tabindex="-1"></section>
         </div>
     </div>
 
@@ -444,7 +437,7 @@
             <output id="shop-purchase-feedback" role="status" hidden></output>
         </div>
     </div>
-    <div id="shop-inspect-screen" class="absolute inset-0 z-[62] hidden">
+    <div id="shop-inspect-screen" role="dialog" aria-modal="true" aria-labelledby="gear-inspect-name" class="absolute inset-0 z-[62] hidden">
         <section class="gear-inspector" role="dialog" aria-modal="true" aria-labelledby="gear-inspect-name">
             <header><span class="arcade-eyebrow">PRO SHOP / EQUIPMENT INSPECT</span><button id="btn-close-shop-inspect" type="button" aria-label="Back to shop">BACK ×</button></header>
             <div id="gear-inspect-content"></div>
@@ -604,6 +597,6 @@
     <div id="gain-fx-layer" class="absolute inset-0 z-[48] pointer-events-none"></div>
 
     <!-- GAME CODE IMPLEMENTATION -->
-    <script type="module" src="./src/main.js?v=0.3.0"></script>
+    <script type="module" src="./src/main.js?v=0.4.0"></script>
 </body>
 </html>
