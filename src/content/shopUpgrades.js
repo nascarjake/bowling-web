@@ -1,6 +1,6 @@
-import { BALL_TRAITS, addBallTrait } from '../game/ballLoadout.js?v=0.4.0';
-import { addBumperCharges } from '../game/laneHazards.js?v=0.4.0';
-import { GAME } from '../core/state.js?v=0.4.0';
+import { BALL_TRAITS, addBallTrait } from '../game/ballLoadout.js?v=0.4.1';
+import { addBumperCharges } from '../game/laneHazards.js?v=0.4.1';
+import { GAME } from '../core/state.js?v=0.4.1';
 
 function applyOneThrowBallUpgrade(kind) {
     const upgrades = GAME.activeUpgrades;

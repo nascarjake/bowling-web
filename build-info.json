@@ -1,7 +1,7 @@
 {
-  "version": "0.4.0",
-  "sourceCommit": "78bb59775e07c2e3674e6b69132cd01833c40438",
-  "builtAt": "2026-10-24T07:17:42.898Z",
+  "version": "0.4.1",
+  "sourceCommit": "5ede95d2b82ecd2d74e45f13be8762caebf957df",
+  "builtAt": "2026-10-24T19:23:57.280Z",
   "entry": "index.html",
   "files": {
     ".nojekyll": {
@@ -90,7 +90,7 @@
     },
     "index.html": {
       "bytes": 48215,
-      "sha256": "a486819553179f9c941fc389d5c10c8cf14fcd238d6d64a7b31a999d3a7210f2"
+      "sha256": "327d47ea1bb121f946b3d0ab1492fbbd87bcb1e63f664e5755fa0700dfc78500"
     },
     "music1.mp3": {
       "bytes": 4621117,
@@ -150,7 +150,7 @@
     },
     "src/content/events.js": {
       "bytes": 5815,
-      "sha256": "ea5eb5cf35faf056f459ef6bbde3e70a5be9725101c60a2af0a5d4a9689b3872"
+      "sha256": "83beb56ccfd29687b7ac48899adb63ac3c0aadc86eb649aa2c397a17b9df3817"
     },
     "src/content/pinTypes.js": {
       "bytes": 527,
@@ -162,11 +162,11 @@
     },
     "src/content/shopUpgrades.js": {
       "bytes": 8426,
-      "sha256": "cfce5b5551e50955bdb4ec86e7915ae9f0cae894376579a9db3276efab8045a3"
+      "sha256": "f619b6a85ce668e426c11eebe410c972fb1f6c90f610bd335a1d6d5d9cac6961"
     },
     "src/content/tenpinShop.js": {
       "bytes": 3314,
-      "sha256": "72cf06ecd79ed0016d1b6c16f2ea99b6f20510eb530c872face0390d0f859b78"
+      "sha256": "93fc92c08e58dcecff128cf9c7560b5d853426faf74db1a635cf7449c92deaf8"
     },
     "src/content/vocabulary.js": {
       "bytes": 2908,
@@ -178,19 +178,19 @@
     },
     "src/core/state.js": {
       "bytes": 2483,
-      "sha256": "18dd216bd488e0a707bf89fbe433d5dc5bd96012537f85b69b903e61f5ddbcb5"
+      "sha256": "c13bfe0b33a5478f71dce540b9533aa4cc5f2413569017613e7f303ae731d6b2"
     },
     "src/debug/defaultConfig.js": {
       "bytes": 7871,
       "sha256": "53e0f972ac67087c5f0df71c34c580a8f2398a0d844094a00b39a0e6a1ea55d4"
     },
     "src/game/app.js": {
-      "bytes": 419186,
-      "sha256": "18caaafd2ab3a00acddcfdd2f11686ef6dfd1196a2b5c4e0b6e796dbd6a6ca3c"
+      "bytes": 419366,
+      "sha256": "5c76aacd26cfd838b2e9df05e5ee6cda38a49ab176b18982dcc95963cb5aeaa2"
     },
     "src/game/ballLoadout.js": {
       "bytes": 3613,
-      "sha256": "da3afdf90331cf5333a7f8a7465288ed8bf755d6e609e13d8c5e0dfd109f00d0"
+      "sha256": "3fc60c60cd78d162fd09910d2af1cc001991944ea05f3cd8c6ffbe3d0e6e5b1b"
     },
     "src/game/laneHazards.js": {
       "bytes": 2418,
@@ -202,7 +202,7 @@
     },
     "src/main.js": {
       "bytes": 1408,
-      "sha256": "737c2601457db86e098e0e497401f930bcb890655723187520c9d51183288759"
+      "sha256": "45e2bd1b5af1b1f9bcb22c903dc2f0ec3c387728a0e856f35dc336aba1c381b0"
     },
     "src/physics/rapierShim.js": {
       "bytes": 13520,
@@ -221,8 +221,8 @@
       "sha256": "869869937a832a09e4f22f61058d3f8d307ea04a324747b698ba72cb2afde51f"
     },
     "src/scene/gameplayVisuals.js": {
-      "bytes": 1212,
-      "sha256": "3c2b15ea491bf5e3649f36b5eaf83e95171236e194b1ff9afe9c22e2c808dc1c"
+      "bytes": 2443,
+      "sha256": "3858383704d2c638df236af3b1da62e6adbe116d4692b55af13de5a1a5c3f51c"
     },
     "src/scene/particles.js": {
       "bytes": 1481,
@@ -234,7 +234,7 @@
     },
     "src/scene/presentation.js": {
       "bytes": 26892,
-      "sha256": "100cf852917a4bd05b0cf38348c8cf35f79b5cf77fcfbf6083be58148f223704"
+      "sha256": "237838ff3d55b0c44e9299a03c0932e093f787c8bf663daac9e8c06f5d0fe8e0"
     },
     "src/scene/reflectionPass.js": {
       "bytes": 2483,
@@ -246,11 +246,11 @@
     },
     "src/ui/buildSummary.js": {
       "bytes": 9190,
-      "sha256": "1e21fa6adef9bb6bde19a189b440adb6a80850b96c446744c9ead808bb0019f5"
+      "sha256": "d1f28503735a03378a8296d60c9ed8534aaa99b50acd7b0e9a52a011450e5d58"
     },
     "src/ui/cabinetArt.js": {
       "bytes": 10494,
-      "sha256": "56097fd92b2169062ebea720ad1896bb6438591cd78f0c7fb3cb74115497eeec"
+      "sha256": "a29acdc83499102e054eaa9e0c082d672a87ea36ddd4500ef68b7a155fee10cb"
     },
     "src/ui/dom.js": {
       "bytes": 1079,
@@ -266,7 +266,7 @@
     },
     "src/ui/scoreHud.js": {
       "bytes": 1481,
-      "sha256": "adb1c1f114bca64b3c57f246164aa3f9ef249e038e50ab3a29ee361d1366d09a"
+      "sha256": "2a6a4c3dfad3a325e5d78d182f4c06db2189b5be2db6ba23683f58b210938a1b"
     },
     "src/ui/shopArt.js": {
       "bytes": 13596,
@@ -274,7 +274,7 @@
     },
     "src/ui/starterEquipment.js": {
       "bytes": 7986,
-      "sha256": "04b2c13e30fc2cbe20cfe51bfbace99bd30e68579932ecd52f72d9100e3cb1c0"
+      "sha256": "669aaa5e763901efff364e5ca5b79457621dee644590207380f4820372639c99"
     },
     "styles/arcade.css": {
       "bytes": 26697,

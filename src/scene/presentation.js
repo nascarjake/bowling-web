@@ -1,7 +1,7 @@
-import { ballTextureVein, BALL_TEXTURE_CHANNELS } from './ballSurface.js?v=0.4.0';
-import { createSharedGeometryPool } from './sharedGeometry.js?v=0.4.0';
-import { createPinGeometry } from './pinGeometry.js?v=0.4.0';
-import { districtForStage, routeTheme } from '../ui/routeArt.js?v=0.4.0';
+import { ballTextureVein, BALL_TEXTURE_CHANNELS } from './ballSurface.js?v=0.4.1';
+import { createSharedGeometryPool } from './sharedGeometry.js?v=0.4.1';
+import { createPinGeometry } from './pinGeometry.js?v=0.4.1';
+import { districtForStage, routeTheme } from '../ui/routeArt.js?v=0.4.1';
 
 // Presentation for a single, continuously widening lane. Dimensions are in world
 // units: boards, trim, and light fixtures retain their scale as the rack grows.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLaneDimensions, createLaneLayout, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from '../src/game/laneLayout.js?v=0.4.0';
+import { createLaneDimensions, createLaneLayout, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from '../src/game/laneLayout.js?v=0.4.1';
 
 test('all routes expand from ten to 120 pins and keep the entire rack on the lane', () => {
     for (const layout of ['classic', 'wide', 'split', 'boss', 'fragile', 'messy']) {

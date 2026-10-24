@@ -1,4 +1,4 @@
-import { isGutterMawRoute } from './laneHazards.js?v=0.4.0';
+import { isGutterMawRoute } from './laneHazards.js?v=0.4.1';
 // Gameplay balance lives here; legacy house upgrades remain shared by both balls.
 export const BALL_TRAITS = {
     drive: { name: 'Drive Core', desc: '+1.8 physical mass for stronger carry.', color: '#71d9ff', mass: 1.8 },

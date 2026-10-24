@@ -1,29 +1,29 @@
-import { buildSummaryMarkup, equipmentScope, quoteBallTrait, ballTraitEligibility, receiverMarkup } from '../ui/buildSummary.js?v=0.4.0';
-import { mountStarterEquipment, bindEquipmentNavigation } from '../ui/starterEquipment.js?v=0.4.0';
-import { renderReflectionPass, shouldUpdateReflection, syncReflectionClone } from '../scene/reflectionPass.js?v=0.4.0';
-import { BALL_TRAITS, STARTER_BALLS, createBallLoadout, migrateBallLoadout, selectedBall, ballBonuses, canSwitchBall, switchBall, laneModifierLabel } from './ballLoadout.js?v=0.4.0';
-import { migrateBumperCharges, createBumperContacts, consumeBumperImpact, rearmBumperContacts, gutterMawDelta, isGutterMawRoute } from './laneHazards.js?v=0.4.0';
-import { createMawVisuals } from '../scene/gameplayVisuals.js?v=0.4.0';
-import { syncTextCells } from '../ui/scoreHud.js?v=0.4.0';
-import { setIfChanged, containDialogTab } from '../ui/dom.js?v=0.4.0';
-import { updateParticles } from '../scene/particles.js?v=0.4.0';
-import { RetroAudio } from '../audio/retroAudio.js?v=0.4.0';
-import { GAME } from '../core/state.js?v=0.4.0';
-import { SHOP_UPGRADES } from '../content/shopUpgrades.js?v=0.4.0';
-import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js?v=0.4.0';
-import { EVENT_TYPES } from '../content/events.js?v=0.4.0';
-import { VOCABULARY } from '../content/vocabulary.js?v=0.4.0';
-import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js?v=0.4.0';
-import { PIN_TYPES } from '../content/pinTypes.js?v=0.4.0';
-import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js?v=0.4.0';
-import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js?v=0.4.0';
-import { initPhysics } from '../physics/rapierShim.js?v=0.4.0';
-import { createLaneDimensions, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from './laneLayout.js?v=0.4.0';
-import { createLanePresentation } from '../scene/presentation.js?v=0.4.0';
-import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=0.4.0';
+import { buildSummaryMarkup, equipmentScope, quoteBallTrait, ballTraitEligibility, receiverMarkup } from '../ui/buildSummary.js?v=0.4.1';
+import { mountStarterEquipment, bindEquipmentNavigation } from '../ui/starterEquipment.js?v=0.4.1';
+import { renderReflectionPass, shouldUpdateReflection, syncReflectionClone } from '../scene/reflectionPass.js?v=0.4.1';
+import { BALL_TRAITS, STARTER_BALLS, createBallLoadout, migrateBallLoadout, selectedBall, ballBonuses, canSwitchBall, switchBall, laneModifierLabel } from './ballLoadout.js?v=0.4.1';
+import { migrateBumperCharges, createBumperContacts, consumeBumperImpact, rearmBumperContacts, gutterMawDelta, isGutterMawRoute, MAW_BALANCE } from './laneHazards.js?v=0.4.1';
+import { createMawVisuals } from '../scene/gameplayVisuals.js?v=0.4.1';
+import { syncTextCells } from '../ui/scoreHud.js?v=0.4.1';
+import { setIfChanged, containDialogTab } from '../ui/dom.js?v=0.4.1';
+import { updateParticles } from '../scene/particles.js?v=0.4.1';
+import { RetroAudio } from '../audio/retroAudio.js?v=0.4.1';
+import { GAME } from '../core/state.js?v=0.4.1';
+import { SHOP_UPGRADES } from '../content/shopUpgrades.js?v=0.4.1';
+import { ROUTE_TYPES, BOSS_VARIANTS } from '../content/routes.js?v=0.4.1';
+import { EVENT_TYPES } from '../content/events.js?v=0.4.1';
+import { VOCABULARY } from '../content/vocabulary.js?v=0.4.1';
+import { TENPIN_SHOP_ITEMS, TENPIN_RACK_SLOTS } from '../content/tenpinShop.js?v=0.4.1';
+import { PIN_TYPES } from '../content/pinTypes.js?v=0.4.1';
+import { MODEL_ASSETS, CONVERTED_ALLEY_TEXTURES, ALLEY_MATERIAL_PROFILES } from '../scene/assets.js?v=0.4.1';
+import { DEBUG_CONFIG_VERSION, DEBUG_STORAGE_KEY, DEFAULT_DEBUG_CONFIG } from '../debug/defaultConfig.js?v=0.4.1';
+import { initPhysics } from '../physics/rapierShim.js?v=0.4.1';
+import { createLaneDimensions, createLaneLayoutCache, laneCameraDistance, PIN_RACK_MICRO_JITTER, MIN_PLAYABLE_LANE_WIDTH } from './laneLayout.js?v=0.4.1';
+import { createLanePresentation } from '../scene/presentation.js?v=0.4.1';
+import { DISTRICTS, districtForStage, routeTheme, routeNodePosition as circuitNodePosition, circuitWires, laneArtwork, bossEmblem, districtBackdrop } from '../ui/routeArt.js?v=0.4.1';
 
-import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=0.4.0';
-import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=0.4.0';
+import { shopVisual, shopOfferState, shopArtwork, shopPinArt } from '../ui/shopArt.js?v=0.4.1';
+import { eventVisual, eventChoiceVisual, eventSceneArt, cabinetArt, RELIC_VISUALS } from '../ui/cabinetArt.js?v=0.4.1';
 let eventRewardTimer = null;
 let debugEventIndex = 0;
 
@@ -6750,6 +6750,7 @@ function beginRollSettling() {
     if (GAME.state !== 'BALL_ROLLING') return;
     clearRollWatchdog();
     GAME.state = 'ROLL_SETTLING';
+    mawVisuals?.hideWarning();
     setMobileControlRailHidden(true);
     activeHook = 0;
     sfx.stopBallRoll();
@@ -8016,7 +8017,7 @@ function showBossIntro(route) {
 
 function bossRuleText(route) {
     const parts = [];
-    if (isGutterMawRoute(route)) parts.push('Black holes pull at the edges; center line is safe. Anchor Cover resists pull. Bumpers block exits while charged.');
+    if (isGutterMawRoute(route)) parts.push('Center band avoids Maw pull; gutters still catch edge exits. Anchor Cover resists Maw pull, and charged bumpers catch exits.');
     if (route.targetMod) parts.push(`Target +${route.targetMod}`);
 
     if (route.hookMod && route.hookMod !== 1) parts.push(`Hook ${Math.round(route.hookMod * 100)}%`);
@@ -8126,7 +8127,7 @@ function startFrame() {
     toggleGutterGuards(GAME.activeUpgrades.bumperCharges > 0);
     syncMawVisuals();
     if (isGutterMawRoute(GAME.currentRoute)) {
-        showAlert('GUTTER MAW • Keep to the center. Anchor Cover resists the pull.');
+        showAlert('GUTTER MAW • CENTER BAND: NO MAW PULL');
     }
     launchX = 0;
     spawnBall();
@@ -8854,6 +8855,7 @@ function applyLoadoutBallSkin(mesh, radius) {
 
 function updateLaneHazards(dt) {
     throwElapsed += dt;
+    mawVisuals?.update(throwElapsed);
     const origin = laneOrigin(), radius = ballBody.shapes[0].radius || 0.49;
     const localX = ballBody.position.x - origin.x;
     rearmBumperContacts(bumperContacts, localX, LANE.currentWidth / 2, radius);
@@ -8865,7 +8867,6 @@ function updateLaneHazards(dt) {
     }
     if (ballBody.position.z < laneEndZ() || ballBody.position.z > ballStartZ() || ballBody.position.y < origin.y - 0.1) return;
     ballBody.velocity.x += gutterMawDelta({ route: GAME.currentRoute, rolling: GAME.state === 'BALL_ROLLING', elapsed: throwElapsed, localX, halfWidth: LANE.currentWidth / 2, velocityX: ballBody.velocity.x, resistance: activeThrowMods.resistance || 0, dt });
-    mawVisuals?.update(throwElapsed);
 }
 
 function clearGameplayLaneEffects() {
@@ -8881,7 +8882,13 @@ function syncMawVisuals() {
     mawVisuals = null;
     if (!isGutterMawRoute(GAME.currentRoute)) return;
     const metrics = gutterChannelMetrics(LANE.currentWidth);
-    mawVisuals = createMawVisuals(THREE, scene, { origin: laneOrigin(), length: laneLength(), gutterX: metrics.visualWidth / 2 + metrics.gutterWidth * 0.5 });
+    mawVisuals = createMawVisuals(THREE, scene, {
+        origin: laneOrigin(),
+        length: laneLength(),
+        gutterX: metrics.visualWidth / 2 + metrics.gutterWidth * 0.5,
+        safeHalfWidth: LANE.currentWidth / 2 * MAW_BALANCE.safeFraction,
+        warningSeconds: MAW_BALANCE.graceSeconds
+    });
 }
 
 function renderTraitReceiver(item) {

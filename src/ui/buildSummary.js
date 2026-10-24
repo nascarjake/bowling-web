@@ -1,7 +1,7 @@
-import { shopPinArt } from './shopArt.js?v=0.4.0';
-import { STARTER_BALLS, BALL_TRAITS } from '../game/ballLoadout.js?v=0.4.0';
-import { migrateBumperCharges } from '../game/laneHazards.js?v=0.4.0';
-import { STARTER_PORTRAITS } from './starterEquipment.js?v=0.4.0';
+import { shopPinArt } from './shopArt.js?v=0.4.1';
+import { STARTER_BALLS, BALL_TRAITS } from '../game/ballLoadout.js?v=0.4.1';
+import { migrateBumperCharges } from '../game/laneHazards.js?v=0.4.1';
+import { STARTER_PORTRAITS } from './starterEquipment.js?v=0.4.1';
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[char]);
 const number = value => Number(value || 0).toFixed(3).replace(/\.?0+$/, '') || '0';
 const percent = value => `${Math.round(Number(value || 0) * 100)}%`;

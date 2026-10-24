@@ -1,4 +1,4 @@
-import { createBallLoadout } from '../game/ballLoadout.js?v=0.4.0';
+import { createBallLoadout } from '../game/ballLoadout.js?v=0.4.1';
 export const GAME = {
     state: 'TITLE', // TITLE, MAIN_METER, BALL_ROLLING, ROLL_SETTLING, ROUND_OVER, SHOP, GAMEOVER
     mode: 'roguelike',

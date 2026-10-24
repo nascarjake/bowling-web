@@ -1,4 +1,4 @@
-import { GAME } from '../core/state.js?v=0.4.0';
+import { GAME } from '../core/state.js?v=0.4.1';
 
 function applyOneThrowBallUpgrade(kind) {
     const upgrades = GAME.activeUpgrades;

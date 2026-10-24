@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SHOP_UPGRADES } from '../src/content/shopUpgrades.js?v=0.4.0';
-import { TENPIN_SHOP_ITEMS } from '../src/content/tenpinShop.js?v=0.4.0';
-import { shopVisual, shopOfferState, shopArtwork } from '../src/ui/shopArt.js?v=0.4.0';
+import { SHOP_UPGRADES } from '../src/content/shopUpgrades.js?v=0.4.1';
+import { TENPIN_SHOP_ITEMS } from '../src/content/tenpinShop.js?v=0.4.1';
+import { shopVisual, shopOfferState, shopArtwork } from '../src/ui/shopArt.js?v=0.4.1';
 
 test('every purchasable item has an illustrated identity and a concise effect', () => {
     for (const item of [...SHOP_UPGRADES, ...TENPIN_SHOP_ITEMS]) {

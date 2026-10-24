@@ -1,4 +1,4 @@
-import { STARTER_BALLS, BALL_TRAITS, createBallLoadout } from '../game/ballLoadout.js?v=0.4.0';
+import { STARTER_BALLS, BALL_TRAITS, createBallLoadout } from '../game/ballLoadout.js?v=0.4.1';
 
 export const STARTER_PORTRAITS = Object.fromEntries(STARTER_BALLS.map(ball => [ball.id, new URL(`../assets/balls/${ball.id}.png`, import.meta.url).href]));
 export function chooseStarterBall(ids, slot, id) {

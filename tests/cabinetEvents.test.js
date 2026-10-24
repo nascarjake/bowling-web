@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAME } from '../src/core/state.js?v=0.4.0';
-import { EVENT_TYPES } from '../src/content/events.js?v=0.4.0';
-import { EVENT_IDS, eventVisual, eventChoiceVisual, eventSceneArt } from '../src/ui/cabinetArt.js?v=0.4.0';
+import { GAME } from '../src/core/state.js?v=0.4.1';
+import { EVENT_TYPES } from '../src/content/events.js?v=0.4.1';
+import { EVENT_IDS, eventVisual, eventChoiceVisual, eventSceneArt } from '../src/ui/cabinetArt.js?v=0.4.1';
 
 const number = value => Number(value.replace('−', '-').replace(/[^0-9.+-]/g, ''));
 const effects = {

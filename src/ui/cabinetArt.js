@@ -1,4 +1,4 @@
-import { shopArtwork } from './shopArt.js?v=0.4.0';
+import { shopArtwork } from './shopArt.js?v=0.4.1';
 
 const reward = (value, label, duration = 'THIS RUN') => ({ value, label, duration });
 const EVENTS = {
